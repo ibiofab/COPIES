@@ -1,3 +1,17 @@
+"""
+
+ Copyright 2022 University of Illinois Board of Trustees. All Rights Reserved.
+ Carl R. Woese Institute for Genomic Biology
+ This file is part of COPIES, which is released under specific terms.  See file License.txt file for full license details.
+
+"""
+
+#paths
+# directories will be relative to script source.
+path = '../data/'
+deg_file = '../essential genes/deg.csv'
+blast_path = '../blast/bin/'
+
 #Modules
 import numpy as np
 import pandas as pd
@@ -6,12 +20,18 @@ from Bio.Seq import Seq
 import re
 from collections import Counter
 import argparse
-import os
+import os, sys
 from Bio.Blast.Applications import NcbiblastpCommandline
 import distance
 import scann
 from Bio.SeqUtils import GC
 import doench_predict
+import multiprocessing as mp
+
+NUM_THREADS = mp.cpu_count()
+
+# change working directory to script directory
+os.chdir(os.path.dirname(sys.argv[0]))
 
 #Functions
 def read_fasta(name):
@@ -416,7 +436,6 @@ org_ge = args.blast_org
 backbone_region = args.backbone_complementarity_check
 
 #Data Processing
-path = '/home/aboob2/universal_landing_pad/data/'
 genome = read_fasta(path + genome_file)
 gene_table = pd.read_csv(path + gene_file)
 refined_gene_table = gene_table[['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']]
@@ -483,7 +502,7 @@ if len(grna_data) > 0:
             else:
                 on_target_seq.append(grna_hr_df['Guide Sequence'][i][0:24] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
 
-        grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
+        grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=NUM_THREADS)
     else:
         grna_hr_df['On-target Score'] = 'Not Available'
 
@@ -493,7 +512,6 @@ if len(grna_data) > 0:
         organism_list = org_ge.split(',')
 
         #procuring Essential Gene Database file
-        deg_file = '/home/aboob2/universal_landing_pad/essential genes/deg.csv'
         deg_database = pd.read_csv(deg_file)
 
         db = os.path.join(path, protein_file.split('/')[0], 'RefOrg.faa') # BLAST database
@@ -505,13 +523,12 @@ if len(grna_data) > 0:
         ref_org = path + protein_file.split('/')[0] + '/RefOrg.fasta'
         write_fasta(ref_org, eg_df)
 
-        blast_path = '/home/aboob2/miniconda3/pkgs/blast-2.5.0-hc0b0e79_3/bin/'
         #Creating Blast Database
         blastdb_cmd = '{}makeblastdb -in {} -parse_seqids -dbtype prot -out {}'.format(blast_path, ref_org, db)
         os.system(blastdb_cmd)
 
         #Blast
-        cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa')
+        cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa', num_threads=NUM_THREADS)
         stdout, stderr = cmd_blastp()
 
         results = pd.read_csv(blastout, sep="\t", header=None)
