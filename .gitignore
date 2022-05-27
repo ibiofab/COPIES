@@ -4,6 +4,7 @@ venv/
 data/
 essential\ genes/
 
+*.tar.xz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

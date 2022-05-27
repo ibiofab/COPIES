@@ -15,6 +15,11 @@ if [ ! -d "blast/" ]; then
 	mkdir blast
 	tar xjf blast-2.12.0-hf3cf87c_4.tar.bz2 -C blast
 	rm blast-2.12.0-hf3cf87c_4.tar.bz2
+	if [[ ! $(ldconfig -p | grep libpcre.so.1) ]]; then
+		# create missing symlink
+		ln -s  $(find /lib/ -name libpcre.so.3 | head -n 1) blast/lib/ncbi-blast+/libpcre.so.1
+	fi
+
 fi
 if [ ! -d "venv/" ]; then
 	echo "Python virtual environment will be created..."
