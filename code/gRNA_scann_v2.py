@@ -498,7 +498,7 @@ if len(grna_data) > 0:
         on_target_seq = []
         for i in range(len(grna_hr_df)):
             if len(grna_hr_df['Guide Sequence'][i]) < 23:
-                on_target_seq.append(grna_hr_df['Right HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
             else:
                 on_target_seq.append(grna_hr_df['Guide Sequence'][i][0:24] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
 
