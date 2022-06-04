@@ -10,9 +10,8 @@ If you use this tool, please cite us:
 **Installation**
 
 **Usage**
-<sub>
+
 Command Line
-</sub>
 
 Web Interface
 
