@@ -18,7 +18,7 @@ This repository accompanies the work "".
 ### Usage
 
 #### Command Line
-`COPIES` can be accessed from the command line
+`COPIES` can be accessed from the command line. 
 ```
 
 ```
