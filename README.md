@@ -5,7 +5,13 @@ COPIES is a computational pipeline for identification of CRISPR-facilitated in
 
 This repository accompanies the work "".
 
-If you use this tool, please cite us:
+<details>
+<summary>If you use this tool, please cite us:</summary>
+
+```bibtex
+
+```
+</details>
 
 **Installation**
 
