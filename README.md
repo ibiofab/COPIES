@@ -22,5 +22,10 @@ This repository accompanies the work "".
 #### Web Interface
 
 
-The Parameter Dictionary:
+### The Parameter Dictionary for 'COPIES' is divided into 4 sections: 
+#### 1. Guide RNA
+#### 2. Homology Arm
+#### 3. Harbor Information 
+#### 4. Essentiality Information. 
+
 ![Information_2](https://user-images.githubusercontent.com/60017121/171938516-73cbb74c-ec38-45be-9b73-5cb845211579.png)
