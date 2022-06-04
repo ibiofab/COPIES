@@ -1,5 +1,5 @@
 # COPIES
-**CO**mputational **P**ipeline for **I**dentification of CRISPR-facilitated int**E**gration **S**ites ('COPIES') is a command line and web interface tool for rapid discovery of genomic safe harbors. Designed to work for any organism with a genome in NCBI and for any CRISPR system, COPIES can identify neutral sites in a genome-wide manner. The identified sites can be used for synthetic biology toolkit characterization and construction of genetically stable strains for biochemical production.
+**CO**mputational **P**ipeline for **I**dentification of CRISPR-facilitated int**E**gration **S**ites (`COPIES`) is a command line and web interface tool for rapid discovery of genomic safe harbors. Designed to work for any organism with a genome in NCBI and for any CRISPR system, (`COPIES`) can identify neutral sites in a genome-wide manner. The identified sites can be used for synthetic biology toolkit characterization and construction of genetically stable strains for biochemical production.
 
 ### READ THE PAPER!
 
@@ -22,7 +22,7 @@ This repository accompanies the work "".
 #### Web Interface
 
 
-### The Parameter Dictionary for 'COPIES' is divided into 4 sections: 
+### The Parameter Dictionary for (`COPIES`) is divided into 4 sections: 
 #### 1. Guide RNA
 #### 2. Homology Arm
 #### 3. Harbor Information 
