@@ -38,4 +38,4 @@ You can also use `COPIES` through our web interface. Visit us at [COPIES](https:
 <img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051848-af31ad8c-d5e4-4d6f-9bf7-a31c7ef3b15f.png">
 
 #### 4. Essentiality Information. 
-<img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051859-cf0a6b26-720f-44ba-832e-6229a374b4ca.png">
+<img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051901-6275e417-ef8c-4d47-bf3b-4ad19fcb4fff.png">
