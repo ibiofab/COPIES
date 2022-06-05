@@ -29,8 +29,13 @@ You can also use `COPIES` through our web interface. Visit us at [COPIES](https:
 
 ### The Parameter Dictionary for `COPIES` is divided into 4 sections: 
 #### 1. Guide RNA
-#### 2. Homology Arm
-#### 3. Harbor Information 
-#### 4. Essentiality Information. 
+<img width="846" alt="image" src="https://user-images.githubusercontent.com/60017121/172051815-2387996a-f6fb-4143-9e3c-f69b6df18102.png">
 
-![Information_2](https://user-images.githubusercontent.com/60017121/171938516-73cbb74c-ec38-45be-9b73-5cb845211579.png)
+#### 2. Homology Arm
+<img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051827-a5ab698b-9902-4c19-80da-7e314f6cfd15.png">
+
+#### 3. Harbor Information 
+<img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051848-af31ad8c-d5e4-4d6f-9bf7-a31c7ef3b15f.png">
+
+#### 4. Essentiality Information. 
+<img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051859-cf0a6b26-720f-44ba-832e-6229a374b4ca.png">
