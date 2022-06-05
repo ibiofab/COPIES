@@ -29,13 +29,13 @@ You can also use `COPIES` through our web interface. Visit us at [COPIES](https:
 
 ### The Parameter Dictionary for `COPIES` is divided into 4 sections: 
 #### 1. Guide RNA
-<img width="846" alt="image" src="https://user-images.githubusercontent.com/60017121/172051815-2387996a-f6fb-4143-9e3c-f69b6df18102.png">
+<img width="623" alt="image" src="https://user-images.githubusercontent.com/60017121/172052395-6bec0324-a86a-4584-9fab-96f39526d547.png">
 
 #### 2. Homology Arm
-<img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051827-a5ab698b-9902-4c19-80da-7e314f6cfd15.png">
+<img width="623" alt="image" src="https://user-images.githubusercontent.com/60017121/172052476-a93cfe48-2030-48d9-a3c3-8c177bda8d97.png">
 
 #### 3. Harbor Information 
-<img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051848-af31ad8c-d5e4-4d6f-9bf7-a31c7ef3b15f.png">
+<img width="623" alt="image" src="https://user-images.githubusercontent.com/60017121/172052481-79a10d36-dec4-41fb-8b7d-7edd124e4875.png">
 
 #### 4. Essentiality Information. 
-<img width="830" alt="image" src="https://user-images.githubusercontent.com/60017121/172051901-6275e417-ef8c-4d47-bf3b-4ad19fcb4fff.png">
+<img width="624" alt="image" src="https://user-images.githubusercontent.com/60017121/172052483-1cfdde45-3b08-4732-be4d-7a257a2ca0d7.png">
