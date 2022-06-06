@@ -29,7 +29,7 @@ You can also use `COPIES` through our web interface. Visit us at [COPIES](https:
 
 ### The Parameter Dictionary for `COPIES` is divided into 4 sections: 
 #### 1. Guide RNA
-<img src=https://user-images.githubusercontent.com/60017121/172052684-46b5abef-d215-4e41-9928-32c924011594.png width="648">
+![GuideRNA](https://user-images.githubusercontent.com/60017121/172188030-fa185a8a-08e8-48fb-a572-dd1009540370.png)
 
 #### 2. Homology Arm
 <img src=https://user-images.githubusercontent.com/60017121/172052679-150a321b-be90-4d4e-939c-5233a0775ea3.png width="648">
