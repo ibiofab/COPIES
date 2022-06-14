@@ -536,7 +536,7 @@ if len(grna_data) > 0:
     #Remove gRNA located at the end of the chromosomes
     ind_to_remove = []
     for i in range(len(grna_hr_df)):
-        if grna_hr_df['Location'][i] < distal_end and grna_hr_df['Location'][i] > grna_hr_df['Chromosome Length'][i] - distal_end:
+        if grna_hr_df['Location'][i] < distal_end or grna_hr_df['Location'][i] > grna_hr_df['Chromosome Length'][i] - distal_end:
             ind_to_remove.append(i)
 
     grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
