@@ -636,6 +636,7 @@ protein_file = args.protein_file
 org_ge = args.blast_org
 backbone_region = args.backbone_complementarity_check
 distal_end = args.distal_end_len
+on_target_score_name == args.on_target
 
 #Data Processing
 genome = read_fasta(path + genome_file)
