@@ -507,7 +507,6 @@ if len(grna_data) > 0:
         chrom_name_list.append(chrom_name_df.loc[chrom_name_df['Accession'] == grna_hr_df['Accession'][i], '#Name'].iloc[0])
 
     grna_hr_df.insert(loc=3, column='Chromosome', value=chrom_name_list)
-    del grna_hr_df['Accession']
     
     #GC content as column
     #guide_gc = []
