@@ -20,9 +20,9 @@ This repository accompanies the work "".
 ### Usage
 
 #### Command Line
-`COPIES` can be accessed from the command line. The parameters required to run the script can be accessed using 
+`COPIES` can be accessed from the command line. For information on optional arguments and flags, run
 ```
-python sites.py --help
+python sites.py -h
 ```
 The parameters are explained in more details in the 'Parameter Dictionary' below. A sample example to run the script - 
 ```
