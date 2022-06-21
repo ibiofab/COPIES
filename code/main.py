@@ -681,7 +681,7 @@ if len(grna_data) > 0:
     del grna_hr_df['Guide with PAM']
 
     chrom_name_df = gene_table.drop_duplicates('Accession').reset_index(drop=True)[['#Name','Accession']]
-    grna_hr_df = grna_hr_df[grna_hr_df['Accession'].isin(list(chrom_name_df['Accession']))].reset_index(drop=True) #removing gRNA if index not in gene table as intergenic criteria cannot be checked
+    grna_hr_df = grna_hr_df[grna_hr_df['Accession'].isin(list(chrom_name_df['Accession']))].reset_index(drop=True) #removing gRNA if accession ID not in gene table as intergenic criteria cannot be checked
     
     chrom_name_list = []
     for i in range(len(grna_hr_df)):
