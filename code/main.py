@@ -600,7 +600,7 @@ parser.add_argument('--polyT_grna', type=int, choices=range(0, 11, 1), metavar="
 parser.add_argument('--intspace', type=int, default=300, help='Minimum distance of gRNA from any gene. Default is 300bp. Value is dependent on the organism of interest. Example: Prokaryotes: 300 bp, Fungi: 400 bp.')
 parser.add_argument('--edit_dist', type=int, default=6, choices=range(0, 11, 1), metavar="[0-10]",  help='Minimum number of mismatches allowed in the guide region to classify a sequence as candidate gRNA. Default value is 6.')
 parser.add_argument('--dist_type', choices=['hamming', 'levenshtein'], default='hamming', help="Select the distance type. Default: hamming.")
-parser.add_argument('--gene_density_len', type=int, default=10000, help='Size of the region from the gRNA site to calculate gene density. Default is 10000bp. Value is dependent on the organism of interest.')
+parser.add_argument('-gd_l', '--gene_density_len', type=int, default=10000, help='Size of the region from the gRNA site to calculate gene density. Default is 10000bp. Value is dependent on the organism of interest.')
 parser.add_argument('-hr_l', '--HR_Length', type=int, choices=range(5, 1001, 1), metavar="[5-1000]", default=50, help="Length of the homology arms. Default: 50bp.")
 parser.add_argument('--RE_hr', type=str, default='', help='Undesired recognition sequence of restriction enzymes in the homology arm.')
 parser.add_argument('--polyG_hr', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of consecutive G/C repeats not allowed in the homology arm. Default value of 0 implies poly_G rule is not applied.')
