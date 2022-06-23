@@ -38,7 +38,7 @@ Note: As significant time and computation resources are required for genomes gre
 Note: We have restricted the web interface to ____ as significant time and computation resources are required. We advise you to use our command line option for genomes greater than __ in size. 
 
 ### Parameters
-#### The Parameter Dictionary for `COPIES` is divided into 4 sections: 
+#### The parameter dictionary for `COPIES` is divided into 4 sections: 
 #### 1. Guide RNA
 <img src=https://user-images.githubusercontent.com/60017121/175431044-7fe903c5-62dc-44bd-8bb8-3ea64f4337a7.png width="648">
 
