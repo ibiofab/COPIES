@@ -689,13 +689,6 @@ if len(grna_data) > 0:
 
     grna_hr_df.insert(loc=3, column='Chromosome', value=chrom_name_list)
     
-    #GC content as column
-    #guide_gc = []
-    #for i in range(len(grna_hr_df)):
-    #    guide_gc.append(GC(grna_hr_df['Guide Sequence'][i]))
-        
-    #grna_hr_df.insert(loc = 2, column='GC% Guide', value = guide_gc)
-    
     self_comp = []
     stem_len = 4
     for i in range(len(grna_hr_df)):
@@ -808,11 +801,14 @@ if len(grna_data) > 0:
         chr_eg_zone = pd.DataFrame(chr_eg_zone, columns = ['Acc','Loc'])
 
         zone = []
+        site_loc = []
         for i in range(len(grna_hr_df)):
             if grna_hr_df['Strand'][i] == '+':
                 grna_loc = grna_hr_df['Location'][i]
+                site_loc.append(grna_loc)
             else:
                 grna_loc = grna_hr_df['Chromosome Length'][i] - grna_hr_df['Location'][i]
+                site_loc.append(grna_loc - glen - len(pam))
 
             for j in range(np.shape(chr_eg_zone)[0]):
                 if chr_eg_zone['Acc'][j] == grna_hr_df['Accession'][i]:
@@ -822,9 +818,21 @@ if len(grna_data) > 0:
 
         grna_hr_es_df = grna_hr_df
         grna_hr_es_df['Zone'] = zone
+        del grna_hr_es_df['Location']
+        grna_hr_es_df.insert(loc = 6, column='Location', value = site_loc)
         pd.DataFrame(grna_hr_es_df).to_csv(path + output_file, index = False) #Safe Harbor Data Output
 
     else:
+        site_loc = []
+        for i in range(len(grna_hr_df)):
+            if grna_hr_df['Strand'][i] == '+':
+                site_loc.append(grna_hr_df['Location'][i])
+            else:
+                site_loc.append(grna_hr_df['Chromosome Length'][i] - grna_hr_df['Location'][i] - glen - len(pam))
+
+        del grna_hr_df['Location']
+        grna_hr_df.insert(loc = 6, column='Location', value = site_loc)
+        
         pd.DataFrame(grna_hr_df).to_csv(path + output_file, index = False) #Harbor Data Output
         
 else:
