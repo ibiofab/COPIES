@@ -318,7 +318,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
 
         #intergenic region size, adjacent genes and gene density
         for i in range(len(grna_list_mm_intg)):
-            grna_list_mm_intg[i].extend(get_gene_info(gtable, grna_list_mm_intg[i][1], grna_list_mm_intg[i][2], grna_list_mm_intg[i][3], grna_list_mm_intg[i][4], gdenslen))
+            grna_list_mm_intg[i] = grna_list_mm_intg[i] + get_gene_info(gtable, grna_list_mm_intg[i][1], grna_list_mm_intg[i][2], grna_list_mm_intg[i][3], grna_list_mm_intg[i][4], gdenslen)
     
     return grna_list_mm_intg
 
