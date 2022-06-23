@@ -38,7 +38,7 @@ def read_fasta(name):
     fasta_seqs = SeqIO.parse(open(name),'fasta')
     data = []
     for fasta in fasta_seqs:
-        if not ('mitochondrion' in fasta.description or 'plastid' in fasta.description or 'chloroplast' in fasta.description): #Considering only nuclear chromosomes, removing mitochondrial and plastid/chloroplast genomes
+        if not ('mitochondrion' in fasta.description or 'plastid' in fasta.description or 'chloroplast' in fasta.description): #Considering only nuclear chromosomes (includes plasmid/megaplasmid), removing mitochondrial and plastid/chloroplast genomes
             data.append([fasta.id, str(fasta.seq).strip().upper()])
             
     return data
