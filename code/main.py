@@ -26,6 +26,7 @@ from Bio.SeqUtils import GC
 import doench_predict
 import sys
 import multiprocessing as mp
+import math
 
 NUM_THREADS = mp.cpu_count()
 
@@ -392,8 +393,6 @@ def rs1_score(sequence):
     Generates a binary matrix for DNA/RNA sequence, where each column is a possible base
     and each row is a position along the sequence. Matrix column order is A, T/U, C, G
     """
-    import math
-    import numpy as np
     seq = str(sequence).upper()
     seq = list(seq)
     matrix1  = np.zeros([len(sequence),4], dtype=int)
