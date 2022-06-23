@@ -34,8 +34,7 @@ python sites.py -
 #### Web Interface
 You can also use `COPIES` through our web interface. Visit us at [COPIES](https://www.google.com). 
 
-Note: As significant time and computation resources are required for genomes greater than __ in size, we advise you to use our command line option. 
-Note: We have restricted the web interface to ____ as significant time and computation resources are required. We advise you to use our command line option for genomes greater than __ in size. 
+Note: We have restricted the web interface to prokaryotic and small eukaryotic genomes. We advise you to use our command line option for genomes greater than __ in size as significant time and computation resources are required. 
 
 ### Parameters
 #### The parameter dictionary for `COPIES` is divided into 4 sections: 
