@@ -36,7 +36,8 @@ You can also use `COPIES` through our web interface. Visit us at [COPIES](https:
 
 Note: As significant time and computation resources are required for genomes greater than __ in size, we advise you to use our command line option. 
 
-### The Parameter Dictionary for `COPIES` is divided into 4 sections: 
+### Parameters
+#### The Parameter Dictionary for `COPIES` is divided into 4 sections: 
 #### 1. Guide RNA
 <img src=https://user-images.githubusercontent.com/60017121/175431044-7fe903c5-62dc-44bd-8bb8-3ea64f4337a7.png width="648">
 
