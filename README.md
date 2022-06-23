@@ -37,6 +37,7 @@ You can also use `COPIES` through our web interface. Visit us at [COPIES](https:
 <img src=https://user-images.githubusercontent.com/60017121/175431044-7fe903c5-62dc-44bd-8bb8-3ea64f4337a7.png width="648">
 
 #### 2. Homology Arm
+<img src=https://user-images.githubusercontent.com/60017121/175431166-90a9e665-4560-4284-89a7-06cea290272e.png width="648">
 <img src=https://user-images.githubusercontent.com/60017121/172052679-150a321b-be90-4d4e-939c-5233a0775ea3.png width="648">
 
 #### 3. Harbor Information 
