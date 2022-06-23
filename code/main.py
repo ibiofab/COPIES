@@ -40,7 +40,7 @@ def read_fasta(name):
     for fasta in fasta_seqs:
         if not ('mitochondrion' in fasta.description or 'plastid' in fasta.description or 'chloroplast' in fasta.description): #Considering only nuclear chromosomes (includes plasmid/megaplasmid), removing mitochondrial and plastid/chloroplast genomes
             data.append([fasta.id, str(fasta.seq).strip().upper()])
-            
+    
     return data
     
 def pam_to_search(pam, iupac_code):
@@ -71,7 +71,6 @@ def one_hot(seq_list):
 
 def check_intergenic(gtable, chrom, loc, strand, chrom_len, intergenic_space):
     flag = True
-    
     #getting the gene list present on the chromsomose of interest
     gloi = gtable.loc[gtable['Accession'] == chrom].reset_index(drop=True)
     if len(gloi) > 0:
@@ -83,7 +82,6 @@ def check_intergenic(gtable, chrom, loc, strand, chrom_len, intergenic_space):
                 if loc > gloi_start[i] - intergenic_space and loc < gloi_stop[i] + intergenic_space:
                     flag = False
                     break
-
         else:
             for i in range(len(gloi)):
                 if chrom_len - loc > gloi_start[i] - intergenic_space and chrom_len - loc < gloi_stop[i] + intergenic_space:
@@ -107,13 +105,11 @@ def get_gene_info(gtable, chrom, loc, strand, chrom_len, gdenslen):
             intg_region_size = '-'
             relative_orient = '-'
             left_gene = '-'
-
         elif curr_loc > list(gloi['Stop'])[-1]:
             left_gene = list(gloi['Locus tag'])[-1]
             intg_region_size = '-'
             relative_orient = '-'
             right_gene = '-'
-
         else:
             stop_index = len([x for x in list(gloi['Stop']) if x < curr_loc]) - 1
             intg_region_size = gloi['Start'][stop_index+1] - gloi['Stop'][stop_index]
@@ -281,7 +277,6 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     
     unique_grna_library_mm = []
     k_to_check = 3 #knearest neighbor search
-    
     if dist_type == 'hamming':
         for i in range(len(xq)):
             knn_dist = []
@@ -316,7 +311,6 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
                 index_to_keep.append(i)
 
         grna_list_mm_intg = [grna_list_mm[i] for i in index_to_keep]
-
         #intergenic region size, adjacent genes and gene density
         for i in range(len(grna_list_mm_intg)):
             grna_list_mm_intg[i] = grna_list_mm_intg[i] + get_gene_info(gtable, grna_list_mm_intg[i][1], grna_list_mm_intg[i][2], grna_list_mm_intg[i][3], grna_list_mm_intg[i][4], gdenslen)
@@ -325,7 +319,6 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
 
 def hr_filter(data, glen, pam, genome, hr_len, RE_hr, polyG_hr, polyT_hr):
     for i in range(len(data)):
-        
         #get the chromosome seq based on data[i][1]; use genome
         chrom_seq = genome[[chrom_name[0] for chrom_name in genome].index(data[i][1])][1]
         
