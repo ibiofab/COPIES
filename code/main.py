@@ -820,6 +820,7 @@ if len(grna_data) > 0:
         grna_hr_es_df['Zone'] = zone
         del grna_hr_es_df['Location']
         grna_hr_es_df.insert(loc = 6, column='Location', value = site_loc)
+        
         pd.DataFrame(grna_hr_es_df).to_csv(path + output_file, index = False) #Safe Harbor Data Output
 
     else:
