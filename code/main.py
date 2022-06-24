@@ -1,9 +1,7 @@
 """
-
  Copyright 2022 University of Illinois Board of Trustees. All Rights Reserved.
  Carl R. Woese Institute for Genomic Biology
  This file is part of COPIES, which is released under specific terms.  See file License.txt file for full license details.
-
 """
 
 #paths
@@ -20,13 +18,15 @@ from Bio.Seq import Seq
 import re
 from collections import Counter
 import argparse
-import os, sys
+import os
 from Bio.Blast.Applications import NcbiblastpCommandline
 import distance
 import scann
 from Bio.SeqUtils import GC
 import doench_predict
+import sys
 import multiprocessing as mp
+import math
 
 NUM_THREADS = mp.cpu_count()
 
@@ -38,9 +38,9 @@ def read_fasta(name):
     fasta_seqs = SeqIO.parse(open(name),'fasta')
     data = []
     for fasta in fasta_seqs:
-        if not ('mitochondrion' in fasta.description or 'plastid' in fasta.description or 'chloroplast' in fasta.description): #Considering only nuclear chromosomes, removing mitochondrial and plastid/chloroplast genomes
+        if not ('mitochondrion' in fasta.description or 'plastid' in fasta.description or 'chloroplast' in fasta.description): #Considering only nuclear chromosomes (includes plasmid/megaplasmid), removing mitochondrial and plastid/chloroplast genomes
             data.append([fasta.id, str(fasta.seq).strip().upper()])
-            
+    
     return data
     
 def pam_to_search(pam, iupac_code):
@@ -71,22 +71,23 @@ def one_hot(seq_list):
 
 def check_intergenic(gtable, chrom, loc, strand, chrom_len, intergenic_space):
     flag = True
-    
     #getting the gene list present on the chromsomose of interest
     gloi = gtable.loc[gtable['Accession'] == chrom].reset_index(drop=True)
-    
-    if strand == '+':
-        for i in range(len(gloi)):
-            if loc > gloi['Start'][i] - intergenic_space and loc < gloi['Stop'][i] + intergenic_space:
-                flag = False
-                break
-        
-    else:
-        for i in range(len(gloi)):
-            if chrom_len - loc > gloi['Start'][i] - intergenic_space and chrom_len - loc < gloi['Stop'][i] + intergenic_space:
-                flag = False
-                break
-    
+    if len(gloi) > 0:
+        gloi_start = gloi['Start'].to_numpy()
+        gloi_stop = gloi['Stop'].to_numpy()
+
+        if strand == '+':
+            for i in range(len(gloi)):
+                if loc > gloi_start[i] - intergenic_space and loc < gloi_stop[i] + intergenic_space:
+                    flag = False
+                    break
+        else:
+            for i in range(len(gloi)):
+                if chrom_len - loc > gloi_start[i] - intergenic_space and chrom_len - loc < gloi_stop[i] + intergenic_space:
+                    flag = False
+                    break
+
     return flag
 
 def get_gene_info(gtable, chrom, loc, strand, chrom_len, gdenslen):
@@ -104,13 +105,11 @@ def get_gene_info(gtable, chrom, loc, strand, chrom_len, gdenslen):
             intg_region_size = '-'
             relative_orient = '-'
             left_gene = '-'
-
         elif curr_loc > list(gloi['Stop'])[-1]:
             left_gene = list(gloi['Locus tag'])[-1]
             intg_region_size = '-'
             relative_orient = '-'
             right_gene = '-'
-
         else:
             stop_index = len([x for x in list(gloi['Stop']) if x < curr_loc]) - 1
             intg_region_size = gloi['Start'][stop_index+1] - gloi['Stop'][stop_index]
@@ -180,7 +179,7 @@ def grna_search(genome, pam_l, glen, orient):
     
     return grna_list
 
-def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, gtable, intergenic_space, gdenslen, ambiguous_nucleotides):
+def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, gtable, intergenic_space, gdenslen, ambiguous_nucleotides, gc_limits, dist_type):
     
     #get grna occurrence table (without PAM)
     if orient == '3prime':
@@ -231,6 +230,13 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     else: 
         grna_wo_pam_f = grna_once_wo_pam_library_f
         
+    #GC content check
+    low_limit, up_limit = [int(x) for x in gc_limits.split(",")]
+    if low_limit == 0 and up_limit == 100:
+        grna_wo_pam_f = grna_wo_pam_f
+    else:
+        grna_wo_pam_f = [w for w in grna_wo_pam_f if(low_limit <= GC(w) <= up_limit)]
+        
     #gRNA polyG check
     if not polyG_len == 0:
         polyG_to_check = "G" * polyG_len
@@ -258,7 +264,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     grna_wo_pam_f_index = [seed_to_compare_dict.get(key) for key in unique_seed_library]
     grna_wo_pam_us_f = [grna_wo_pam_f[i] for i in grna_wo_pam_f_index]
     
-    #off-target using unique_seed_library and complete_seed_library
+    #off-target using filtered_grna_library and complete_grna_library
     xq = one_hot(grna_wo_pam_us_f)
     xb = one_hot(complete_grna_library_wo_pam)
     norm_xb = xb/np.linalg.norm(xb, axis=1)[:, np.newaxis]
@@ -271,14 +277,23 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     
     unique_grna_library_mm = []
     k_to_check = 3 #knearest neighbor search
-    for i in range(len(xq)):
-        knn_dist = []
-        for j in range(k_to_check):
-            knn_dist.append(distance.hamming(grna_wo_pam_us_f[i], complete_grna_library_wo_pam[neighbors[i][j+1]]))
-    
-        if all(i > edit_dist - 1 for i in knn_dist):
-            unique_grna_library_mm.append(grna_wo_pam_us_f[i])
-    
+    if dist_type == 'hamming':
+        for i in range(len(xq)):
+            knn_dist = []
+            for j in range(k_to_check):
+                knn_dist.append(distance.hamming(grna_wo_pam_us_f[i], complete_grna_library_wo_pam[neighbors[i][j+1]]))
+
+            if all(i > edit_dist - 1 for i in knn_dist):
+                unique_grna_library_mm.append(grna_wo_pam_us_f[i])
+    else:
+        for i in range(len(xq)):
+            knn_dist = []
+            for j in range(k_to_check):
+                knn_dist.append(distance.levenshtein(grna_wo_pam_us_f[i], complete_grna_library_wo_pam[neighbors[i][j+1]]))
+
+            if all(i > edit_dist - 1 for i in knn_dist):
+                unique_grna_library_mm.append(grna_wo_pam_us_f[i])
+                
     if orient == '3prime':
         grna_to_compare = [item[0][:glen] for item in grna_list]    
     elif orient == '5prime':
@@ -296,16 +311,14 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
                 index_to_keep.append(i)
 
         grna_list_mm_intg = [grna_list_mm[i] for i in index_to_keep]
-
         #intergenic region size, adjacent genes and gene density
         for i in range(len(grna_list_mm_intg)):
-            grna_list_mm_intg[i].extend(get_gene_info(gtable, grna_list_mm_intg[i][1], grna_list_mm_intg[i][2], grna_list_mm_intg[i][3], grna_list_mm_intg[i][4], gdenslen))
+            grna_list_mm_intg[i] = grna_list_mm_intg[i] + get_gene_info(gtable, grna_list_mm_intg[i][1], grna_list_mm_intg[i][2], grna_list_mm_intg[i][3], grna_list_mm_intg[i][4], gdenslen)
     
     return grna_list_mm_intg
 
 def hr_filter(data, glen, pam, genome, hr_len, RE_hr, polyG_hr, polyT_hr):
     for i in range(len(data)):
-        
         #get the chromosome seq based on data[i][1]; use genome
         chrom_seq = genome[[chrom_name[0] for chrom_name in genome].index(data[i][1])][1]
         
@@ -365,6 +378,180 @@ def hr_filter(data, glen, pam, genome, hr_len, RE_hr, polyG_hr, polyT_hr):
     
     return gh_data
 
+def rs1_score(sequence): 
+    """
+    Adopted from Müller Paul, H., Istanto, D.D., Heldenbrand, J. et al. CROPSR: an automated platform for complex genome-wide CRISPR gRNA design and validation. BMC Bioinformatics 23, 74 (2022).
+    """
+    """
+    Generates a binary matrix for DNA/RNA sequence, where each column is a possible base
+    and each row is a position along the sequence. Matrix column order is A, T/U, C, G
+    """
+    seq = str(sequence).upper()
+    seq = list(seq)
+    matrix1  = np.zeros([len(sequence),4], dtype=int)
+    for i,item in enumerate(sequence):
+        if item == 'A':
+            matrix1[i,0] = 1
+        if item == 'T':
+            matrix1[i,1] = 1
+        if item == 'U':
+            matrix1[i,1] = 1
+        if item == 'C':
+            matrix1[i,2] = 1
+        if item == 'G':
+            matrix1[i,3] = 1
+
+    """
+    Generates a binary matrix for DNA/RNA sequence, where each column is a possible
+    pair of adjacent bases, and each row is a position along the sequence.
+    Matrix column order is AA, AT, AC, AG, TA, TT, TC, TG, CA, CT, CC, CG, GA, GT, GC, GG
+    """
+    sequence = sequence.replace('U','T')
+    pairwise_sequence = []
+    for i in range(len(sequence)):
+        if i < len(sequence)-1:
+            basepair = sequence[i]+sequence[i+1]
+            pairwise_sequence.append(basepair)
+    matrix2 = np.zeros([len(pairwise_sequence),16], dtype=int)
+    for i,item in enumerate(pairwise_sequence):
+        if item == 'AA':
+            matrix2[i,0] = 1
+        if item == 'AT':
+            matrix2[i,1] = 1
+        if item == 'AC':
+            matrix2[i,2] = 1
+        if item == 'AG':
+            matrix2[i,3] = 1
+        if item == 'TA':
+            matrix2[i,4] = 1
+        if item == 'TT':
+            matrix2[i,5] = 1
+        if item == 'TC':
+            matrix2[i,6] = 1
+        if item == 'TG':
+            matrix2[i,7] = 1
+        if item == 'CA':
+            matrix2[i,8] = 1
+        if item == 'CT':
+            matrix2[i,9] = 1
+        if item == 'CC':
+            matrix2[i,10] = 1
+        if item == 'CG':
+            matrix2[i,11] = 1
+        if item == 'GA':
+            matrix2[i,12] = 1
+        if item == 'GT':
+            matrix2[i,13] = 1
+        if item == 'GC':
+            matrix2[i,14] = 1
+        if item == 'GG':
+            matrix2[i,15] = 1
+
+    """
+    Scoring matrix
+    """
+    intersect = 0.59763615
+    low_gc = -0.2026259
+    high_gc = -0.1665878
+
+    first_order = ['G02','A03','C03','C04','C05',
+                    'G05','A06','C06','C07','G07',
+                    'A12','A15','C15','A16','C16',
+                    'T16','A17','G17','C18','G18',
+                    'A19','C19','G20','T20','G21',
+                    'T21','C22','T22','T23','C24',
+                    'G24','T24','A25','C25','T25',
+                    'G28','T28','C29','G30']
+    first_scores = [-0.2753771,-0.3238875,0.17212887,-0.1006662,-0.2018029,
+                    0.24595663,0.03644004,0.09837684,-0.7411813,-0.3932644,
+                    -0.466099,0.08537695,-0.013814,0.27262051,0.1190226,
+                    -0.2859442,0.09745459,-0.1755462,-0.3457955,-0.6780964,
+                    0.22508903,-0.5077941,-0.4173736,-0.054307,0.37989937,
+                    -0.0907126,0.05782332,-0.5305673,-0.8770074,-0.8762358,
+                    0.27891626,-0.4031022,-0.0773007,0.28793562,-0.2216372,
+                    -0.6890167,0.11787758,-0.1604453,0.38634258]
+    first_order_scores = dict(zip(first_order,first_scores))
+
+    second_order = ['GT02','GC05','AA06','TA06','GG07',
+                    'GG12','TA12','TC12','TT12','GG13',
+                    'GA14','GC14','TG17','GG19','TC19',
+                    'CC20','TG20','AC21','CG21','GA21',
+                    'GG21','TC22','CG23','CT23','AA24',
+                    'AG24','AG25','CG25','TG25','GT27',
+                    'GG29']
+    second_scores = [-0.6257787,0.30004332,-0.8348362,0.76062777,-0.4908167,
+                    -1.5169074,0.7092612,0.49629861,-0.5868739,-0.3345637,
+                    0.76384993,-0.5370252,-0.7981461,-0.6668087,0.35318325,
+                    0.74807209,-0.3672668,0.56820913,0.32907207,-0.8364568,
+                    -0.7822076,-1.029693,0.85619782,-0.4632077,-0.5794924,
+                    0.64907554,-0.0773007,0.28793562,-0.2216372,0.11787758,
+                    -0.69774]
+    second_order_scores = dict(zip(second_order,second_scores))
+
+    # order 1 score matrix
+    """ row order == A T/U C G """
+    first_matrix = np.zeros([4,30], dtype=float)
+    def posit(key):
+        return int(key[1:])-1
+    for k,v in first_order_scores.items():
+        if k[0] == 'A':
+            first_matrix[0,posit(k)] = v
+        elif k[0] == 'T':
+            first_matrix[1,posit(k)] = v
+        elif k[0] == 'C':
+            first_matrix[2,posit(k)] = v
+        elif k[0] == 'G':
+            first_matrix[3,posit(k)] = v
+
+    # order 2 score matrix
+    """ row order == AA AT AC AG TA TT TC TG CA CT CC CG GA GT GC GG """
+    second_matrix = np.zeros([16,29], dtype=float)
+    for k,v in second_order_scores.items():
+        if k[0:2] == 'AA':
+            second_matrix[0,int(k[2:])-1] = v
+        if k[0:2] == 'AT':
+            second_matrix[1,int(k[2:])-1] = v
+        if k[0:2] == 'AC':
+            second_matrix[2,int(k[2:])-1] = v
+        if k[0:2] == 'AG':
+            second_matrix[3,int(k[2:])-1] = v
+        if k[0:2] == 'TA':
+            second_matrix[4,int(k[2:])-1] = v
+        if k[0:2] == 'TT':
+            second_matrix[5,int(k[2:])-1] = v
+        if k[0:2] == 'TC':
+            second_matrix[6,int(k[2:])-1] = v
+        if k[0:2] == 'TG':
+            second_matrix[7,int(k[2:])-1] = v
+        if k[0:2] == 'CA':
+            second_matrix[8,int(k[2:])-1] = v
+        if k[0:2] == 'CT':
+            second_matrix[9,int(k[2:])-1] = v
+        if k[0:2] == 'CC':
+            second_matrix[10,int(k[2:])-1] = v
+        if k[0:2] == 'CG':
+            second_matrix[11,int(k[2:])-1] = v
+        if k[0:2] == 'GA':
+            second_matrix[12,int(k[2:])-1] = v
+        if k[0:2] == 'GT':
+            second_matrix[13,int(k[2:])-1] = v
+        if k[0:2] == 'GC':
+            second_matrix[14,int(k[2:])-1] = v
+        if k[0:2] == 'GG':
+            second_matrix[15,int(k[2:])-1] = v
+
+    item_gc = sequence[0][5:-5]
+    gc_count = item_gc.count('G') + item_gc.count('C')
+    if gc_count < 10:
+        gc_score = low_gc
+    else:
+        gc_score = high_gc
+    first_first = np.matmul(first_matrix,matrix1)
+    score_first = np.trace(first_first)
+    score_second = np.trace(np.matmul(second_matrix,matrix2))
+    score = (1/(1 + math.exp(-(intersect + gc_score + score_first + score_second))))
+    return score
+
 def write_fasta(name, sequence_df):
     out_file = open(name, "w")
     for i in range(len(sequence_df)):
@@ -393,25 +580,29 @@ iupac_code = {
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-g', '--Genome', help="Genome filename", required=True)
-parser.add_argument('-t', '--Gene_table', help="Gene Table filename", required=True)
-parser.add_argument('-out', '--Output_file', help="Name of the output file")
+parser.add_argument('-t', '--Gene_table', help="Gene table filename", required=True)
+parser.add_argument('-out', '--Output_file', default = 'output.csv', help="Name of the output file")
 parser.add_argument('-p', '--PAM', type=str, default='NGG', help="A short PAM motif to search for, it may use IUPAC ambiguous alphabet. Default: NGG.", required=True)
-parser.add_argument('-o', '--Orientation', choices=['3prime', '5prime'], default='3prime', help="PAM position relative to target: 5prime: [PAM][target], 3prime: [target][PAM]. For example, Cas9 is 3prime. Default: '3prime'.")
+parser.add_argument('-o', '--Orientation', choices=['3prime', '5prime'], default='3prime', help="PAM position relative to target: 5prime: [PAM][target], 3prime: [target][PAM]. For example, PAM orientation for SpCas9 is 3prime. Default: 3prime.")
 parser.add_argument('-l', '--Guide_Length', type=int, choices=range(10, 28, 1), metavar="[10-27]", default=20, help="Length of the guide sequence. Default: 20.")
-parser.add_argument('-sl','--Seed_Length', type=int, choices=range(0, 28, 1), metavar="[0-27]", default=10, help='Length of a seed region near the PAM site required to be unique. Default: 10.')
+parser.add_argument('-sl','--Seed_Length', type=int, choices=range(0, 27, 1), metavar="[0-27]", default=10, help='Length of a seed region near the PAM site required to be unique. Specified length should be less than the guide length. Default: 10.')
 parser.add_argument('--RE_grna', type=str, default='', help='Undesired recognition sequence of restriction enzymes in guide RNA')
-parser.add_argument('--polyG_grna', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of G/C repeats not allowed in the guide sequence. Default value of 0 implies poly_G rule is not applied.')
-parser.add_argument('--polyT_grna', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of T/A repeats not allowed in the guide sequence. Default value of 0 implies poly_T rule is not applied.')
-parser.add_argument('--intspace', type=int, default=300, help='Minimum distance of gRNA from any gene. Default is 300bp.')
-parser.add_argument('--edit_dist', type=int, default=6, choices=range(0, 11, 1), metavar="[0-10]",  help='Minimum number of mismatch in the guide region to classify a guide sequence as candidate. Default value is 6.')
-parser.add_argument('--gene_density_len', type=int, default=10000, help='Size of the region from the gRNA site to calculate gene density. Default is 10000bp.')
-parser.add_argument('-hr_l', '--HR_Length', type=int, choices=range(5, 201, 1), metavar="[5-500]", default=50, help="Length of the Homology Arm. Default: 50bp.")
+parser.add_argument('--GC_grna', type=str, default='0,100', help="GC content limits of the gRNA. Recommended range: '25,75'.")
+parser.add_argument('--polyG_grna', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of consecutive G/C repeats not allowed in the guide sequence. Default value of 0 implies poly_G rule is not applied.')
+parser.add_argument('--polyT_grna', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of consecutive T/A repeats not allowed in the guide sequence. Default value of 0 implies poly_T rule is not applied.')
+parser.add_argument('--intspace', type=int, default=300, help='Minimum distance of gRNA from any gene. Default is 300bp. Value is dependent on the organism of interest. Example: Prokaryotes: 300 bp, Fungi: 400 bp.')
+parser.add_argument('--edit_dist', type=int, default=6, choices=range(0, 11, 1), metavar="[0-10]",  help='Minimum number of mismatches allowed in the guide region to classify a sequence as candidate gRNA. Default value is 6.')
+parser.add_argument('--dist_type', choices=['hamming', 'levenshtein'], default='hamming', help="Select the distance type. Default: hamming.")
+parser.add_argument('-gd_l', '--gene_density_len', type=int, default=10000, help='Size of the region from the gRNA site to calculate gene density. Default is 10000bp. Value is dependent on the organism of interest.')
+parser.add_argument('-hr_l', '--HR_Length', type=int, choices=range(5, 1001, 1), metavar="[5-1000]", default=50, help="Length of the homology arms. Default: 50bp.")
 parser.add_argument('--RE_hr', type=str, default='', help='Undesired recognition sequence of restriction enzymes in the homology arm.')
-parser.add_argument('--polyG_hr', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of G/C repeats not allowed in the homology arm. Default value of 0 implies poly_G rule is not applied.')
-parser.add_argument('--polyT_hr', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of T/A repeats not allowed in the homology arm. Default value of 0 implies poly_T rule is not applied.')
-parser.add_argument('--backbone_complementarity_check', type=str, default='', help='Check if guide RNA will form secondary structure with the backbone.')
-parser.add_argument('--protein_file', type=str, default='', help="Fasta file containing protein sequences")
-parser.add_argument('--blast_org', type=str, default='',  help="Organisms to blast proteins against to identify probable essential genes.")
+parser.add_argument('--polyG_hr', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of consecutive G/C repeats not allowed in the homology arm. Default value of 0 implies poly_G rule is not applied.')
+parser.add_argument('--polyT_hr', type=int, choices=range(0, 11, 1), metavar="[0-10]", default=0, help='Length of consecutive T/A repeats not allowed in the homology arm. Default value of 0 implies poly_T rule is not applied.')
+parser.add_argument('--backbone_complementarity_check', type=str, default='', help='Complementarity check if the guide RNA will form secondary structure with the backbone.')
+parser.add_argument('--protein_file', type=str, default='', help="Fasta file containing protein sequences.")
+parser.add_argument('--blast_org', type=str, default='',  help="Name of the oprganism/s to blast proteins against to identify probable essential genes.")
+parser.add_argument('--distal_end_len', type=int, default=5000,  help="Remove guide RNA located within this distance from the end of the chromosome. Value is dependent on the organism of interest. Note for NGG PAM, enter a value greater than the length of the homology arms.")
+parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: 'doench','crospr.")
 
 args = parser.parse_args()
 genome_file = args.Genome
@@ -422,10 +613,12 @@ orient = args.Orientation
 glen = args.Guide_Length
 seedlen = args.Seed_Length
 re_grna_list = args.RE_grna
+gc_limits = args.GC_grna
 polyG_len = args.polyG_grna
 polyT_len = args.polyT_grna
 intergenic_space = args.intspace
 edit_dist = args.edit_dist
+dist_type = args.dist_type
 gdenslen = args.gene_density_len
 hr_len = args.HR_Length
 re_hr_list = args.RE_hr
@@ -434,6 +627,8 @@ polyT_hr = args.polyT_hr
 protein_file = args.protein_file
 org_ge = args.blast_org
 backbone_region = args.backbone_complementarity_check
+distal_end = args.distal_end_len
+on_target_score_name = args.on_target
 
 #Data Processing
 genome = read_fasta(path + genome_file)
@@ -442,9 +637,23 @@ refined_gene_table = gene_table[['Accession', 'Start', 'Stop', 'Strand', 'Locus 
 pam_library = pam_to_search(pam,iupac_code)
 ambiguous_nucleotides = list(iupac_code.keys())[4:]
 
+if seedlen >= glen:
+    print('Seed length should be less than the guide length.')
+    sys.exit()
+    
+low_limit, up_limit = [int(x) for x in gc_limits.split(",")]
+if low_limit < 0 or up_limit > 100:
+    print('GC range is not valid. Please enter the value between 0 and 100. The input format is as follows: --GC_grna 10,90')
+    sys.exit()
+    
+if pam == 'NGG' and orient == '3prime':
+    if distal_end < hr_len:
+        print('Please enter a value greater than the length of the homology arms for the distal end length.')
+        sys.exit()
+
 #Obtaining harbors
 grna_list = grna_search(genome, pam_library, glen, orient)
-grna_data = grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, refined_gene_table, intergenic_space, gdenslen, ambiguous_nucleotides)
+grna_data = grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, refined_gene_table, intergenic_space, gdenslen, ambiguous_nucleotides, gc_limits, dist_type)
 
 if len(grna_data) > 0:
     grna_hr_data = hr_filter(grna_data, glen, pam, genome, hr_len, re_hr_list, polyG_hr, polyT_hr)
@@ -464,18 +673,13 @@ if len(grna_data) > 0:
     del grna_hr_df['Guide with PAM']
 
     chrom_name_df = gene_table.drop_duplicates('Accession').reset_index(drop=True)[['#Name','Accession']]
+    grna_hr_df = grna_hr_df[grna_hr_df['Accession'].isin(list(chrom_name_df['Accession']))].reset_index(drop=True) #removing gRNA if accession ID not in gene table as intergenic criteria cannot be checked
+    
     chrom_name_list = []
     for i in range(len(grna_hr_df)):
         chrom_name_list.append(chrom_name_df.loc[chrom_name_df['Accession'] == grna_hr_df['Accession'][i], '#Name'].iloc[0])
 
     grna_hr_df.insert(loc=3, column='Chromosome', value=chrom_name_list)
-    del grna_hr_df['Accession']
-    
-    guide_gc = []
-    for i in range(len(grna_hr_df)):
-        guide_gc.append(GC(grna_hr_df['Guide Sequence'][i]))
-        
-    grna_hr_df.insert(loc = 2, column='GC% Guide', value = guide_gc)
     
     self_comp = []
     stem_len = 4
@@ -494,15 +698,28 @@ if len(grna_data) > 0:
 
     grna_hr_df.insert(loc = 3, column='Self-Complementarity', value = self_comp)
     
+    #Remove gRNA located at the end of the chromosomes
+    ind_to_remove = []
+    for i in range(len(grna_hr_df)):
+        if grna_hr_df['Location'][i] < distal_end or grna_hr_df['Location'][i] > grna_hr_df['Chromosome Length'][i] - distal_end:
+            ind_to_remove.append(i)
+
+    grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
+    
     if pam == 'NGG' and orient == '3prime':
         on_target_seq = []
         for i in range(len(grna_hr_df)):
-            if len(grna_hr_df['Guide Sequence'][i]) < 23:
-                on_target_seq.append(grna_hr_df['Right HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+            if len(grna_hr_df['Guide Sequence'][i]) < 24:
+                on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
             else:
-                on_target_seq.append(grna_hr_df['Guide Sequence'][i][0:24] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
 
-        grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=NUM_THREADS)
+        if on_target_score_name == 'doench':
+            grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
+
+        elif on_target_score_name == 'cropsr':
+            grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
+
     else:
         grna_hr_df['On-target Score'] = 'Not Available'
 
@@ -528,7 +745,7 @@ if len(grna_data) > 0:
         os.system(blastdb_cmd)
 
         #Blast
-        cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa', num_threads=NUM_THREADS)
+        cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa')
         stdout, stderr = cmd_blastp()
 
         results = pd.read_csv(blastout, sep="\t", header=None)
@@ -538,6 +755,7 @@ if len(grna_data) > 0:
                    'e_value', 'bitscore']
 
         results.columns = headers
+        #Change BLAST parameters here
         results_filtered = results.loc[(results['e_value'] < 1e-5) & (results['pc_identity'] >= 50)].reset_index(drop=True)
         eg_loc_df = gene_table[gene_table['Protein product'].isin(np.unique(list(results_filtered['query'])))].reset_index(drop=True)
 
@@ -551,7 +769,7 @@ if len(grna_data) > 0:
 
         chr_eg_zone = []
         for i in range(len(chrom_name_df)):
-            curr_chr_eg_data = eg_loc_df.loc[eg_loc_df['#Name'] == chrom_name_df['#Name'][i]].sort_values('Start').reset_index(drop=True)
+            curr_chr_eg_data = eg_loc_df.loc[eg_loc_df['Accession'] == chrom_name_df['Accession'][i]].sort_values('Start').reset_index(drop=True)
 
             zone_info = []
             ini_flag = 0
@@ -559,7 +777,7 @@ if len(grna_data) > 0:
                 for j in range(len(curr_chr_eg_data)):
                     if ini_flag == 0:
                         zone_info = str(0) + '-' + str(curr_chr_eg_data['Start'][j])
-                        chr_eg_zone.append([chrom_name_df['#Name'][i], zone_info])
+                        chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
                         ini_flag = 1
 
                     if j == len(curr_chr_eg_data) - 1:
@@ -567,31 +785,47 @@ if len(grna_data) > 0:
                     else:
                         zone_info = str(curr_chr_eg_data['Stop'][j]) + '-' + str(curr_chr_eg_data['Start'][j+1])
 
-                    chr_eg_zone.append([chrom_name_df['#Name'][i], zone_info])
+                    chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
             else:
                 zone_info = str(0) + '-' + str(chrom_name_df['Length'][i]) #no essential genes on that chromosome
-                chr_eg_zone.append([chrom_name_df['#Name'][i], zone_info])
+                chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
 
-        chr_eg_zone = pd.DataFrame(chr_eg_zone, columns = ['Chr','Loc'])
+        chr_eg_zone = pd.DataFrame(chr_eg_zone, columns = ['Acc','Loc'])
 
         zone = []
+        site_loc = []
         for i in range(len(grna_hr_df)):
             if grna_hr_df['Strand'][i] == '+':
                 grna_loc = grna_hr_df['Location'][i]
+                site_loc.append(grna_loc)
             else:
                 grna_loc = grna_hr_df['Chromosome Length'][i] - grna_hr_df['Location'][i]
+                site_loc.append(grna_loc - glen - len(pam))
 
             for j in range(np.shape(chr_eg_zone)[0]):
-                if chr_eg_zone['Chr'][j] == grna_hr_df['Chromosome'][i]:
+                if chr_eg_zone['Acc'][j] == grna_hr_df['Accession'][i]:
                     curr_zone_bound = chr_eg_zone['Loc'][j].split('-')
                     if grna_loc > int(curr_zone_bound[0]) and grna_loc < int(curr_zone_bound[1]):
                            zone.append(j+1)
 
         grna_hr_es_df = grna_hr_df
         grna_hr_es_df['Zone'] = zone
+        del grna_hr_es_df['Location']
+        grna_hr_es_df.insert(loc = 6, column='Location', value = site_loc)
+        
         pd.DataFrame(grna_hr_es_df).to_csv(path + output_file, index = False) #Safe Harbor Data Output
 
     else:
+        site_loc = []
+        for i in range(len(grna_hr_df)):
+            if grna_hr_df['Strand'][i] == '+':
+                site_loc.append(grna_hr_df['Location'][i])
+            else:
+                site_loc.append(grna_hr_df['Chromosome Length'][i] - grna_hr_df['Location'][i] - glen - len(pam))
+
+        del grna_hr_df['Location']
+        grna_hr_df.insert(loc = 6, column='Location', value = site_loc)
+        
         pd.DataFrame(grna_hr_df).to_csv(path + output_file, index = False) #Harbor Data Output
         
 else:
