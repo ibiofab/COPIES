@@ -706,22 +706,23 @@ if len(grna_data) > 0:
 
     grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
     
-    if pam == 'NGG' and orient == '3prime':
-        on_target_seq = []
-        for i in range(len(grna_hr_df)):
-            if len(grna_hr_df['Guide Sequence'][i]) < 24:
-                on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-            else:
-                on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+    if len(grna_hr_df) > 0:
+        if pam == 'NGG' and orient == '3prime':
+            on_target_seq = []
+            for i in range(len(grna_hr_df)):
+                if len(grna_hr_df['Guide Sequence'][i]) < 24:
+                    on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                else:
+                    on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
 
-        if on_target_score_name == 'doench':
-            grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
+            if on_target_score_name == 'doench':
+                grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
 
-        elif on_target_score_name == 'cropsr':
-            grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
+            elif on_target_score_name == 'cropsr':
+                grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
 
-    else:
-        grna_hr_df['On-target Score'] = 'Not Available'
+        else:
+            grna_hr_df['On-target Score'] = 'Not Available'
 
     if org_ge and protein_file:
         #Adding essentiality information
