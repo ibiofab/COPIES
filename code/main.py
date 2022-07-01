@@ -367,7 +367,7 @@ def hr_filter(data, glen, pam, genome, hr_len, RE_hr, polyG_hr, polyT_hr):
                 index_to_remove.append(i)
         
     #polyT check
-    if not polyT_len == 0:
+    if not polyT_hr == 0:
         polyT_to_check = "T" * polyT_hr
         polyA_to_check = "A" * polyT_hr
         for i in range(len(data)):
