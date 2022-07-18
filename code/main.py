@@ -648,7 +648,7 @@ def main():
        #Cleaning and Labeling dataframe
        grna_hr_df = pd.DataFrame(grna_hr_data, columns = ['Guide with PAM', 'Accession', 'Location', 'Strand', 'Chromosome Length', 'Intergenic Size', 'Left Gene', 'Right Gene', 'Relative Orientation', 'Gene Density', 'Left HR', 'Right HR'])
    else:
-       print('No Harbors can be obtained after applying the specified constraints. Try relaxing the edit distance criteria.')
+       print('No harbors can be obtained after applying the specified constraints. Try relaxing the edit distance criteria.')
        sys.exit()
    
    if len(grna_hr_data) > 0:
