@@ -647,7 +647,10 @@ def main():
 
        #Cleaning and Labeling dataframe
        grna_hr_df = pd.DataFrame(grna_hr_data, columns = ['Guide with PAM', 'Accession', 'Location', 'Strand', 'Chromosome Length', 'Intergenic Size', 'Left Gene', 'Right Gene', 'Relative Orientation', 'Gene Density', 'Left HR', 'Right HR'])
-
+   
+   if len(grna_hr_data) > 0:
+       del grna_hr_data
+       
        if orient == '3prime':
            guide_seq = grna_hr_df['Guide with PAM'].str[:glen]
            pam_seq = grna_hr_df['Guide with PAM'].str[glen:]
