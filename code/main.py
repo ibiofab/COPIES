@@ -178,9 +178,8 @@ def grna_search(genome, pam_l, glen, orient):
                     grna_list.append([chrom_seq[curr_grna_loc[k]:curr_grna_loc[k] + glen + len(curr_pam)], genome[j][0], curr_grna_loc[k], '-', len(chrom_seq)])
     
     return grna_list
-
-def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, gtable, intergenic_space, gdenslen, ambiguous_nucleotides, gc_limits, dist_type):
-    
+   
+def grna_prefilter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, ambiguous_nucleotides, gc_limits):
     #get grna occurrence table (without PAM)
     if orient == '3prime':
         grna_without_pam = [item[0][0:glen] for item in grna_list]    
@@ -196,6 +195,9 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     #get all guide sequences occuring in genome with duplicates removed (definition of duplicate: sequence occurring in multiple places)
     complete_grna_library_wo_pam = list(grna_occurrence['grna']) 
     
+    #get all guide sequences occuring in genome once
+    grna_once_wo_pam_library_f = list(grna_occurrence.loc[grna_occurrence['frequency'] == 1]['grna'])
+    
     #get all seed sequences occuring in genome
     if orient == '3prime':
         seed_region = [item[glen-seedlen:] for item in complete_grna_library_wo_pam]    
@@ -205,9 +207,6 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     seed_occurrence = pd.DataFrame.from_dict(Counter(seed_region), orient='index').reset_index()
     seed_occurrence.columns = ['seed_seq', 'frequency']
     complete_seed_library_with_unique_seed = list(seed_occurrence.loc[seed_occurrence['frequency'] == 1, 'seed_seq'])
-    
-    #get all guide sequences occuring in genome once
-    grna_once_wo_pam_library_f = list(grna_occurrence.loc[grna_occurrence['frequency'] == 1]['grna'])
 
     #gRNA RE check
     re_to_check_grna_pre = re_grna_list.split(',')   
@@ -264,21 +263,31 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     grna_wo_pam_f_index = [seed_to_compare_dict.get(key) for key in unique_seed_library]
     grna_wo_pam_us_f = [grna_wo_pam_f[i] for i in grna_wo_pam_f_index]
     
+    return complete_grna_library_wo_pam, grna_wo_pam_us_f
+   
+def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, gtable, intergenic_space, gdenslen, ambiguous_nucleotides, gc_limits, dist_type):
+    
+    complete_grna_library_wo_pam, grna_wo_pam_us_f = grna_prefilter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, ambiguous_nucleotides, gc_limits)
+    
     #off-target using filtered_grna_library and complete_grna_library
-    xq = one_hot(grna_wo_pam_us_f)
     xb = one_hot(complete_grna_library_wo_pam)
     norm_xb = xb/np.linalg.norm(xb, axis=1)[:, np.newaxis]
+    del xb
     
     searcher = scann.scann_ops_pybind.builder(norm_xb, 10, "dot_product").tree(
     num_leaves=2000, num_leaves_to_search=100, training_sample_size=5000000).score_ah(
     2, anisotropic_quantization_threshold=0.2).reorder(100).build()
+    del norm_xb
     
-    neighbors, distances = searcher.search_batched(xq, leaves_to_search=250, pre_reorder_num_neighbors=250)
+    xq = one_hot(grna_wo_pam_us_f)
+    len_xq = len(xq)
+    neighbors = searcher.search_batched(xq, leaves_to_search=250, pre_reorder_num_neighbors=250)[0]
+    del xq
     
     unique_grna_library_mm = []
     k_to_check = 3 #knearest neighbor search
     if dist_type == 'hamming':
-        for i in range(len(xq)):
+        for i in range(len_xq):
             knn_dist = []
             for j in range(k_to_check):
                 knn_dist.append(distance.hamming(grna_wo_pam_us_f[i], complete_grna_library_wo_pam[neighbors[i][j+1]]))
@@ -286,7 +295,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
             if all(i > edit_dist - 1 for i in knn_dist):
                 unique_grna_library_mm.append(grna_wo_pam_us_f[i])
     else:
-        for i in range(len(xq)):
+        for i in range(len_xq):
             knn_dist = []
             for j in range(k_to_check):
                 knn_dist.append(distance.levenshtein(grna_wo_pam_us_f[i], complete_grna_library_wo_pam[neighbors[i][j+1]]))
@@ -302,6 +311,8 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     grna_to_compare_dict = dict(zip(grna_to_compare,range(0,len(grna_to_compare))))
     grna_index = [grna_to_compare_dict.get(key) for key in unique_grna_library_mm]
     grna_list_mm = [grna_list[i] for i in grna_index]
+    
+    del grna_to_compare, grna_to_compare_dict
     
     #select intergenic gRNA
     if len(grna_list_mm) > 0:
