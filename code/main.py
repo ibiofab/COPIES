@@ -665,9 +665,11 @@ if pam == 'NGG' and orient == '3prime':
 #Obtaining harbors
 grna_list = grna_search(genome, pam_library, glen, orient)
 grna_data = grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, refined_gene_table, intergenic_space, gdenslen, ambiguous_nucleotides, gc_limits, dist_type)
+del grna_list
 
 if len(grna_data) > 0:
     grna_hr_data = hr_filter(grna_data, glen, pam, genome, hr_len, re_hr_list, polyG_hr, polyT_hr)
+    del grna_data
 
     #Cleaning and Labeling dataframe
     grna_hr_df = pd.DataFrame(grna_hr_data, columns = ['Guide with PAM', 'Accession', 'Location', 'Strand', 'Chromosome Length', 'Intergenic Size', 'Left Gene', 'Right Gene', 'Relative Orientation', 'Gene Density', 'Left HR', 'Right HR'])
