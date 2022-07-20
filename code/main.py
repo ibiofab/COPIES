@@ -709,7 +709,7 @@ def main():
                        on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
 
                if on_target_score_name == 'doench':
-                   grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
+                   grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=NUM_THREADS)
 
                elif on_target_score_name == 'cropsr':
                    grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
@@ -739,7 +739,7 @@ def main():
            os.system(blastdb_cmd)
 
            #Blast
-           cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa')
+           cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa',  num_threads=NUM_THREADS)
            stdout, stderr = cmd_blastp()
 
            results = pd.read_csv(blastout, sep="\t", header=None)
