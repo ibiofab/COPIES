@@ -62,12 +62,12 @@ def pam_to_search(pam, iupac_code):
 
 def one_hot(seq_list):
     d_len = len(seq_list[0])
-    one_hot_list = np.zeros((len(seq_list), 4*d_len))
+    one_hot_list = np.zeros((len(seq_list), 4*d_len), dtype=np.float32)
     mapping = dict(zip("ACGT", range(4))) 
     for i in range(len(seq_list)):
         one_hot_list[i] = np.squeeze(np.eye(4)[[mapping[i] for i in seq_list[i]]].reshape(-1,1))
 
-    return np.array(one_hot_list).astype('float32')
+    return one_hot_list
 
 def check_intergenic(gtable, chrom, loc, strand, chrom_len, intergenic_space):
     flag = True
