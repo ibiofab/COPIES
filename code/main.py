@@ -271,7 +271,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     
     #off-target using filtered_grna_library and complete_grna_library
     xb = one_hot(complete_grna_library_wo_pam)
-    norm_xb = xb/np.linalg.norm(xb, axis=1)[:, np.newaxis]
+    norm_xb = xb/np.round(np.sqrt(glen),3)
     del xb
     
     searcher = scann.scann_ops_pybind.builder(norm_xb, 10, "dot_product").tree(
