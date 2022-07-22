@@ -27,6 +27,11 @@ import doench_predict
 import sys
 import multiprocessing as mp
 import math
+import h5py as h5
+from keras.models import Sequential, Model
+from keras.layers.core import  Dropout, Activation, Flatten
+from keras.regularizers import l1,l2,l1_l2
+from keras.layers import Conv1D, MaxPooling1D, Dense, LSTM, Bidirectional, BatchNormalization, MaxPooling2D, AveragePooling1D, Input, Multiply, Add, UpSampling1D
 
 NUM_THREADS = mp.cpu_count()
 
@@ -568,6 +573,97 @@ def rs1_score(sequence):
     score_second = np.trace(np.matmul(second_matrix,matrix2))
     score = (1/(1 + math.exp(-(intersect + gc_score + score_first + score_second))))
     return score
+   
+def one_hot_encoding(lines):
+    data_n = len(lines) 
+    SEQ = np.zeros((data_n, len(lines[0]), 4), dtype=int)
+    
+    for l in range(0, data_n):
+        seq = lines[l]
+        for i in range(28):
+            if seq[i] in "Aa":
+                SEQ[l, i, 0] = 1
+            elif seq[i] in "Cc":
+                SEQ[l, i, 1] = 1
+            elif seq[i] in "Gg":
+                SEQ[l, i, 2] = 1
+            elif seq[i] in "Tt":
+                SEQ[l, i, 3] = 1
+
+    return SEQ
+
+def scores_guides_cas9(guides):
+
+    seq = one_hot_encoding(guides)
+    
+    # model architecture
+    SEQ = Input(shape=(28,4))
+    conv_1 = Conv1D(activation="relu", padding="same", strides=1, filters=20, kernel_size=5, kernel_regularizer = l2(0.0001))(SEQ)
+    bat_norm1 = BatchNormalization()(conv_1)
+    pool = MaxPooling1D(pool_size=(2))(bat_norm1)
+    conv_2 = Conv1D(activation="relu", padding="same", strides=1, filters=40, kernel_size=8, kernel_regularizer = l2(0.0001))(pool)
+    bat_norm2 = BatchNormalization()(conv_2)
+    pool_1 = AveragePooling1D(pool_size=(2))(bat_norm2)
+    enc = pool_1
+    dec_pool_1 =  UpSampling1D(size=2)(enc)
+    dec_bat_norm2 = BatchNormalization()(dec_pool_1)
+    dec_conv_2  = Conv1D(activation="relu", padding="same", strides=1, filters=40, kernel_size=8, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_bat_norm2)
+    dec_pool = UpSampling1D(size=2)(dec_conv_2)
+    dec_conv_1 = Conv1D(activation="relu", padding="same", strides=1, filters=20, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_pool)
+    dec = Conv1D(activation="relu", padding="same", strides=1, filters=4, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_pool)
+    model_seq = Model(inputs = SEQ, outputs= dec) 
+    flatten = Flatten()(enc)
+    dropout_1 = Dropout(0.5)(flatten)
+    dense_1 = Dense(80, activation='relu', kernel_initializer='glorot_uniform')(dropout_1)
+    dropout_2 = Dropout(0.5)(dense_1)
+    out = Dense(units=1,  activation="linear")(dropout_2) 
+    model = Model(inputs = SEQ, outputs= out)
+    model.load_weights(sys.path[0] + "/model/cas9_seq_wtt.h5")
+    pred_y = model.predict(seq)
+
+    score = [-1*ele for ele in pred_y.flatten()]
+    
+    return score
+
+def scores_guides_cas12a(guides):
+
+    # one hot encoding
+    seq = one_hot_encoding(guides)
+
+    # model architecture
+    SEQ = Input(shape=(32,4))
+    conv_1 = Conv1D(activation="relu", padding="same", strides=1, filters=20, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(SEQ)
+    bat_norm1 = BatchNormalization()(conv_1)
+    pool = MaxPooling1D(pool_size=(2))(bat_norm1)
+    conv_2 = Conv1D(activation="relu", padding="same", strides=1, filters=40, kernel_size=8, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(pool)
+    bat_norm2 = BatchNormalization()(conv_2)
+    pool_1 = AveragePooling1D(pool_size=(2))(bat_norm2)
+    enc = pool_1
+    dec_pool_1 =  UpSampling1D(size=2)(enc)
+    dec_bat_norm2 = BatchNormalization()(dec_pool_1)
+    dec_conv_2  = Conv1D(activation="relu", padding="same", strides=1, filters=40, kernel_size=8, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_bat_norm2)
+    dec_pool = UpSampling1D(size=2)(dec_conv_2)
+    dec_conv_1 = Conv1D(activation="relu", padding="same", strides=1, filters=20, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_pool)
+    dec = Conv1D(activation="relu", padding="same", strides=1, filters=4, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_pool)
+    model = Model(inputs = SEQ, outputs= dec)
+    flatten = Flatten()(enc)
+    dropout_1 = Dropout(0.5)(flatten)
+    dense_1 = Dense(80, activation='relu', kernel_initializer='glorot_uniform')(dropout_1)
+    dropout_2 = Dropout(0.5)(dense_1)
+    dense_2 = Dense(units=40,  activation="relu",kernel_initializer='glorot_uniform')(dropout_2)
+    dropout_3 = Dropout(0.5)(dense_2)
+    dense_3 = Dense(units=40,  activation="relu",kernel_initializer='glorot_uniform')(dropout_3)
+    out = Dense(units=1,  activation="linear")(dense_3)
+    model3 = Model(inputs = [SEQ], outputs= out)
+    model3.load_weights(sys.path[0] + "/model/cas12a_wtt.h5")
+
+    # prediction
+    test_x = seq
+    pred_y = model3.predict([test_x])
+
+    score = [-1*ele for ele in pred_y.flatten()]
+
+    return score
 
 def write_fasta(name, sequence_df):
     out_file = open(name, "w")
@@ -705,24 +801,61 @@ def main():
 
        grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
 
-       if len(grna_hr_df) > 0:
-           if pam == 'NGG' and orient == '3prime':
-               on_target_seq = []
-               for i in range(len(grna_hr_df)):
-                   if len(grna_hr_df['Guide Sequence'][i]) < 24:
-                       on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-                   else:
-                       on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+       #On_target scores
+							if len(grna_hr_df) > 0:
+											if on_target_score_name == 'doench':
+															if pam == 'NGG' and orient == '3prime':
+																			on_target_seq = []
+																			for i in range(len(grna_hr_df)):
+																							if len(grna_hr_df['Guide Sequence'][i]) < 24:
+																											on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+																							else:
+																											on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
 
-               if on_target_score_name == 'doench':
-                   grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=NUM_THREADS)
+																			grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
 
-               elif on_target_score_name == 'cropsr':
-                   grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
+											elif on_target_score_name == 'cropsr':
+															if pam == 'NGG' and orient == '3prime':
+																			on_target_seq = []
+																			for i in range(len(grna_hr_df)):
+																							if len(grna_hr_df['Guide Sequence'][i]) < 24:
+																											on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+																							else:
+																											on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
 
-           else:
-               grna_hr_df['On-target Score'] = 'Not Available'
+																			grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
 
+											elif on_target_score_name == 'deepguide(Cas9)':
+															if pam == 'NGG' and orient == '3prime':
+																			on_target_seq = []
+																			for i in range(len(grna_hr_df)):
+																							if glen < 22:
+																											on_target_seq.append(grna_hr_df['Left HR'][i][glen-22:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+																							else:
+																											on_target_seq.append(grna_hr_df['Guide Sequence'][i][-22:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+
+																			grna_hr_df['On-target Score'] = scores_guides_cas9(on_target_seq)
+
+															else:
+																			grna_hr_df['On-target Score'] = 'NA'
+
+											elif on_target_score_name == 'deepGuide(Cas12a)':
+															if pam == 'TTTV' and orient == '5prime':
+																			on_target_seq = []
+																			for i in range(len(grna_hr_df)):
+																							if glen < 27:
+																											on_target_seq.append(grna_hr_df['Left HR'][i][-1:] + grna_hr_df['PAM'][i] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['Right HR'][i][0:27-glen])
+																							else:
+																											on_target_seq.append(grna_hr_df['Left HR'][i][-1:] + grna_hr_df['PAM'][i] + grna_hr_df['Guide Sequence'][i][0:27])
+
+																			grna_hr_df['On-target Score'] = scores_guides_cas12a(on_target_seq)
+
+															else:
+																			grna_hr_df['On-target Score'] = 'NA'
+
+											else:
+															grna_hr_df['On-target Score'] = 'NA'
+						 
        if org_ge and protein_file:
            #Adding essentiality information
            proteins_query = path + protein_file
@@ -856,6 +989,6 @@ if __name__ == "__main__":
     parser.add_argument('--protein_file', type=str, default='', help="Fasta file containing protein sequences.")
     parser.add_argument('--blast_org', type=str, default='',  help="Name of the oprganism/s to blast proteins against to identify probable essential genes.")
     parser.add_argument('--distal_end_len', type=int, default=5000,  help="Remove guide RNA located within this distance from the end of the chromosome. Value is dependent on the organism of interest. Note for NGG PAM, enter a value greater than the length of the homology arms.")
-    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: doench, crospr.")
+    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: doench, crospr, deepguide(Cas9), deepguide(Cas12a).")
     args = parser.parse_args()
     main()
