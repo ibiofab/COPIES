@@ -802,60 +802,8 @@ def main():
        grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
 
        #On_target scores
-							if len(grna_hr_df) > 0:
-											if on_target_score_name == 'doench':
-															if pam == 'NGG' and orient == '3prime':
-																			on_target_seq = []
-																			for i in range(len(grna_hr_df)):
-																							if len(grna_hr_df['Guide Sequence'][i]) < 24:
-																											on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-																							else:
-																											on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-
-																			grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
-
-											elif on_target_score_name == 'cropsr':
-															if pam == 'NGG' and orient == '3prime':
-																			on_target_seq = []
-																			for i in range(len(grna_hr_df)):
-																							if len(grna_hr_df['Guide Sequence'][i]) < 24:
-																											on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-																							else:
-																											on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-
-																			grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
-
-											elif on_target_score_name == 'deepguide(Cas9)':
-															if pam == 'NGG' and orient == '3prime':
-																			on_target_seq = []
-																			for i in range(len(grna_hr_df)):
-																							if glen < 22:
-																											on_target_seq.append(grna_hr_df['Left HR'][i][glen-22:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-																							else:
-																											on_target_seq.append(grna_hr_df['Guide Sequence'][i][-22:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-
-																			grna_hr_df['On-target Score'] = scores_guides_cas9(on_target_seq)
-
-															else:
-																			grna_hr_df['On-target Score'] = 'NA'
-
-											elif on_target_score_name == 'deepGuide(Cas12a)':
-															if pam == 'TTTV' and orient == '5prime':
-																			on_target_seq = []
-																			for i in range(len(grna_hr_df)):
-																							if glen < 27:
-																											on_target_seq.append(grna_hr_df['Left HR'][i][-1:] + grna_hr_df['PAM'][i] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['Right HR'][i][0:27-glen])
-																							else:
-																											on_target_seq.append(grna_hr_df['Left HR'][i][-1:] + grna_hr_df['PAM'][i] + grna_hr_df['Guide Sequence'][i][0:27])
-
-																			grna_hr_df['On-target Score'] = scores_guides_cas12a(on_target_seq)
-
-															else:
-																			grna_hr_df['On-target Score'] = 'NA'
-
-											else:
-															grna_hr_df['On-target Score'] = 'NA'
-						 
+        
+			
        if org_ge and protein_file:
            #Adding essentiality information
            proteins_query = path + protein_file
