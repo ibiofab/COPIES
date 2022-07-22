@@ -856,6 +856,6 @@ if __name__ == "__main__":
     parser.add_argument('--protein_file', type=str, default='', help="Fasta file containing protein sequences.")
     parser.add_argument('--blast_org', type=str, default='',  help="Name of the oprganism/s to blast proteins against to identify probable essential genes.")
     parser.add_argument('--distal_end_len', type=int, default=5000,  help="Remove guide RNA located within this distance from the end of the chromosome. Value is dependent on the organism of interest. Note for NGG PAM, enter a value greater than the length of the homology arms.")
-    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: 'doench','crospr.")
+    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: doench, crospr.")
     args = parser.parse_args()
     main()
