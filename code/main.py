@@ -801,7 +801,7 @@ def main():
 
        grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
 
-       #On_target scores
+       #On target scores
         
 			
        if org_ge and protein_file:
