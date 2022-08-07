@@ -719,8 +719,9 @@ def main():
 
    #Data Processing
    genome = read_fasta(path + genome_file)
-   gene_table = pd.read_csv(path + gene_file)
-   refined_gene_table = gene_table[['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']]
+   gene_table = pd.read_csv(path + gene_file, sep = '\t')[['# feature','class','chromosome','genomic_accession','start','end','strand','locus_tag','product_accession']]
+   gene_table.columns = ['# feature','class','#Name','Accession', 'Start', 'Stop', 'Strand', 'Locus tag','Protein product']
+   refined_gene_table = gene_table[gene_table['# feature']=='gene'][['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']].reset_index(drop=True)
    pam_library = pam_to_search(pam,iupac_code)
    ambiguous_nucleotides = list(iupac_code.keys())[4:]
 
@@ -895,8 +896,9 @@ def main():
 
            results.columns = headers
            #Change BLAST parameters here
-           results_filtered = results.loc[(results['e_value'] < 1e-5) & (results['pc_identity'] >= 50)].reset_index(drop=True)
-           eg_loc_df = gene_table[gene_table['Protein product'].isin(np.unique(list(results_filtered['query'])))].reset_index(drop=True)
+           blast_gene_table = gene_table[(gene_table['# feature']=='CDS') & (gene_table['class']=='with_protein')].reset_index(drop=True)
+	   results_filtered = results.loc[(results['e_value'] < 1e-5) & (results['pc_identity'] >= 50)].reset_index(drop=True)
+           eg_loc_df = blast_gene_table[blast_gene_table['Protein product'].isin(np.unique(list(results_filtered['query'])))].reset_index(drop=True)
 
            chrom_len_array = []
            for i in range(len(chrom_name_df)):
