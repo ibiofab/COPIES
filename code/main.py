@@ -719,7 +719,7 @@ def main():
 
    #Data Processing
    genome = read_fasta(path + genome_file)
-	 total_gene_table = pd.read_csv(path + gene_file, sep = '\t')
+   total_gene_table = pd.read_csv(path + gene_file, sep = '\t')
    gene_table = total_gene_table[total_gene_table['assembly_unit'] == 'Primary Assembly'][['# feature','class','chromosome','genomic_accession','start','end','strand','locus_tag','product_accession']].reset_index(drop=True)
    gene_table.columns = ['# feature','class','#Name','Accession', 'Start', 'Stop', 'Strand', 'Locus tag','Protein product']
    refined_gene_table = gene_table[gene_table['# feature']=='gene'][['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']].reset_index(drop=True)
