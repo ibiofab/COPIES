@@ -719,7 +719,8 @@ def main():
 
    #Data Processing
    genome = read_fasta(path + genome_file)
-   gene_table = pd.read_csv(path + gene_file, sep = '\t')[['# feature','class','chromosome','genomic_accession','start','end','strand','locus_tag','product_accession']]
+   total_gene_table = pd.read_csv(sys.path[0] + '/' + filename, sep = '\t')
+   gene_table = total_gene_table[total_gene_table['assembly_unit'] == 'Primary Assembly'][['# feature','class','chromosome','genomic_accession','start','end','strand','locus_tag','product_accession']].reset_index(drop=True)
    gene_table.columns = ['# feature','class','#Name','Accession', 'Start', 'Stop', 'Strand', 'Locus tag','Protein product']
    refined_gene_table = gene_table[gene_table['# feature']=='gene'][['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']].reset_index(drop=True)
    pam_library = pam_to_search(pam,iupac_code)
