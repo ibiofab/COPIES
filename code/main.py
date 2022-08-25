@@ -825,6 +825,7 @@ def score_guides_bacteria(model_name, sgRNA_seq_list):
     id_column='sgRNAID'
     model='model/Cas9_sgRNA_activity_GBR.pickle' if varlist['model']=='Cas9' else 'model/eSpCas9_sgRNA_activity_GBR.pickle'
     output = GBR_pred_main(sgRNA_seq_list, id_column, model, varlist['normalization'])
+    return output
 
 def write_fasta(name, sequence_df):
     out_file = open(name, "w")
@@ -853,119 +854,119 @@ iupac_code = {
 }
 
 def main():
-   genome_file = args.Genome
-   gene_file = args.Gene_table
-   output_file = args.Output_file
-   pam = args.PAM
-   orient = args.Orientation
-   glen = args.Guide_Length
-   seedlen = args.Seed_Length
-   re_grna_list = args.RE_grna
-   gc_limits = args.GC_grna
-   polyG_len = args.polyG_grna
-   polyT_len = args.polyT_grna
-   intergenic_space = args.intspace
-   edit_dist = args.edit_dist
-   dist_type = args.dist_type
-   gdenslen = args.gene_density_len
-   hr_len = args.HR_Length
-   re_hr_list = args.RE_hr
-   polyG_hr = args.polyG_hr
-   polyT_hr = args.polyT_hr
-   protein_file = args.protein_file
-   org_ge = args.blast_org
-   backbone_region = args.backbone_complementarity_check
-   distal_end = args.distal_end_len
-   on_target_score_name = args.on_target
+    genome_file = args.Genome
+    gene_file = args.Gene_table
+    output_file = args.Output_file
+    pam = args.PAM
+    orient = args.Orientation
+    glen = args.Guide_Length
+    seedlen = args.Seed_Length
+    re_grna_list = args.RE_grna
+    gc_limits = args.GC_grna
+    polyG_len = args.polyG_grna
+    polyT_len = args.polyT_grna
+    intergenic_space = args.intspace
+    edit_dist = args.edit_dist
+    dist_type = args.dist_type
+    gdenslen = args.gene_density_len
+    hr_len = args.HR_Length
+    re_hr_list = args.RE_hr
+    polyG_hr = args.polyG_hr
+    polyT_hr = args.polyT_hr
+    protein_file = args.protein_file
+    org_ge = args.blast_org
+    backbone_region = args.backbone_complementarity_check
+    distal_end = args.distal_end_len
+    on_target_score_name = args.on_target
 
-   #Data Processing
-   genome = read_fasta(path + genome_file)
-   total_gene_table = pd.read_csv(path + gene_file, sep = '\t')
-   gene_table = total_gene_table[total_gene_table['assembly_unit'] == 'Primary Assembly'][['# feature','class','chromosome','genomic_accession','start','end','strand','locus_tag','product_accession']].reset_index(drop=True)
-   gene_table.columns = ['# feature','class','#Name','Accession', 'Start', 'Stop', 'Strand', 'Locus tag','Protein product']
-   refined_gene_table = gene_table[gene_table['# feature']=='gene'][['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']].reset_index(drop=True)
-   pam_library = pam_to_search(pam,iupac_code)
-   ambiguous_nucleotides = list(iupac_code.keys())[4:]
+    #Data Processing
+    genome = read_fasta(path + genome_file)
+    total_gene_table = pd.read_csv(path + gene_file, sep = '\t')
+    gene_table = total_gene_table[total_gene_table['assembly_unit'] == 'Primary Assembly'][['# feature','class','chromosome','genomic_accession','start','end','strand','locus_tag','product_accession']].reset_index(drop=True)
+    gene_table.columns = ['# feature','class','#Name','Accession', 'Start', 'Stop', 'Strand', 'Locus tag','Protein product']
+    refined_gene_table = gene_table[gene_table['# feature']=='gene'][['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']].reset_index(drop=True)
+    pam_library = pam_to_search(pam,iupac_code)
+    ambiguous_nucleotides = list(iupac_code.keys())[4:]
 
-   if seedlen >= glen:
-       print('Seed length should be less than the guide length.')
-       sys.exit()
+    if seedlen >= glen:
+        print('Seed length should be less than the guide length.')
+        sys.exit()
 
-   low_limit, up_limit = [int(x) for x in gc_limits.split(",")]
-   if low_limit < 0 or up_limit > 100:
-       print('GC range is not valid. Please enter the value between 0 and 100. The input format is as follows: --GC_grna 10,90')
-       sys.exit()
+    low_limit, up_limit = [int(x) for x in gc_limits.split(",")]
+    if low_limit < 0 or up_limit > 100:
+        print('GC range is not valid. Please enter the value between 0 and 100. The input format is as follows: --GC_grna 10,90')
+        sys.exit()
 
-   if pam == 'NGG' and orient == '3prime':
-       if distal_end < hr_len:
-           print('Please enter a value greater than the length of the homology arms for the distal end length.')
-           sys.exit()
+    if pam == 'NGG' and orient == '3prime':
+        if distal_end < hr_len:
+            print('Please enter a value greater than the length of the homology arms for the distal end length.')
+            sys.exit()
 
-   #Obtaining harbors
-   grna_list = grna_search(genome, pam_library, glen, orient)
-   grna_data = grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, refined_gene_table, intergenic_space, gdenslen, ambiguous_nucleotides, gc_limits, dist_type)
-   del grna_list
+    #Obtaining harbors
+    grna_list = grna_search(genome, pam_library, glen, orient)
+    grna_data = grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, refined_gene_table, intergenic_space, gdenslen, ambiguous_nucleotides, gc_limits, dist_type)
+    del grna_list
 
-   if len(grna_data) > 0:
-       grna_hr_data = hr_filter(grna_data, glen, pam, genome, hr_len, re_hr_list, polyG_hr, polyT_hr)
-       del grna_data
+    if len(grna_data) > 0:
+        grna_hr_data = hr_filter(grna_data, glen, pam, genome, hr_len, re_hr_list, polyG_hr, polyT_hr)
+        del grna_data
 
-       #Cleaning and Labeling dataframe
-       grna_hr_df = pd.DataFrame(grna_hr_data, columns = ['Guide with PAM', 'Accession', 'Location', 'Strand', 'Chromosome Length', 'Intergenic Size', 'Left Gene', 'Right Gene', 'Relative Orientation', 'Gene Density', 'Left HR', 'Right HR'])
-   else:
-       print('No harbors can be obtained after applying the specified constraints. Try relaxing the edit distance criteria.')
-       sys.exit()
+        #Cleaning and Labeling dataframe
+        grna_hr_df = pd.DataFrame(grna_hr_data, columns = ['Guide with PAM', 'Accession', 'Location', 'Strand', 'Chromosome Length', 'Intergenic Size', 'Left Gene', 'Right Gene', 'Relative Orientation', 'Gene Density', 'Left HR', 'Right HR'])
+    else:
+        print('No harbors can be obtained after applying the specified constraints. Try relaxing the edit distance criteria.')
+        sys.exit()
    
-   if len(grna_hr_data) > 0:
-       del grna_hr_data
-       
-       if orient == '3prime':
-           guide_seq = grna_hr_df['Guide with PAM'].str[:glen]
-           pam_seq = grna_hr_df['Guide with PAM'].str[glen:]
-       elif orient == '5prime':
-           guide_seq = grna_hr_df['Guide with PAM'].str[len(pam):]
-           pam_seq = grna_hr_df['Guide with PAM'].str[:len(pam)]
+    if len(grna_hr_data) > 0:
+        del grna_hr_data
+        
+        if orient == '3prime':
+            guide_seq = grna_hr_df['Guide with PAM'].str[:glen]
+            pam_seq = grna_hr_df['Guide with PAM'].str[glen:]
+        elif orient == '5prime':
+            guide_seq = grna_hr_df['Guide with PAM'].str[len(pam):]
+            pam_seq = grna_hr_df['Guide with PAM'].str[:len(pam)]
 
-       grna_hr_df.insert(loc=0, column='PAM', value=pam_seq)
-       grna_hr_df.insert(loc=0, column='Guide Sequence', value=guide_seq)
-       del grna_hr_df['Guide with PAM']
+        grna_hr_df.insert(loc=0, column='PAM', value=pam_seq)
+        grna_hr_df.insert(loc=0, column='Guide Sequence', value=guide_seq)
+        del grna_hr_df['Guide with PAM']
 
-       chrom_name_df = gene_table.drop_duplicates('Accession').reset_index(drop=True)[['#Name','Accession']]
-       grna_hr_df = grna_hr_df[grna_hr_df['Accession'].isin(list(chrom_name_df['Accession']))].reset_index(drop=True) #removing gRNA if accession ID not in gene table as intergenic criteria cannot be checked
+        chrom_name_df = gene_table.drop_duplicates('Accession').reset_index(drop=True)[['#Name','Accession']]
+        grna_hr_df = grna_hr_df[grna_hr_df['Accession'].isin(list(chrom_name_df['Accession']))].reset_index(drop=True) #removing gRNA if accession ID not in gene table as intergenic criteria cannot be checked
 
-       chrom_name_list = []
-       for i in range(len(grna_hr_df)):
-           chrom_name_list.append(chrom_name_df.loc[chrom_name_df['Accession'] == grna_hr_df['Accession'][i], '#Name'].iloc[0])
+        chrom_name_list = []
+        for i in range(len(grna_hr_df)):
+            chrom_name_list.append(chrom_name_df.loc[chrom_name_df['Accession'] == grna_hr_df['Accession'][i], '#Name'].iloc[0])
 
-       grna_hr_df.insert(loc=3, column='Chromosome', value=chrom_name_list)
+        grna_hr_df.insert(loc=3, column='Chromosome', value=chrom_name_list)
 
-       self_comp = []
-       stem_len = 4
-       for i in range(len(grna_hr_df)):
-           fwd = grna_hr_df['Guide Sequence'][i]
-           rvs = str(Seq(fwd).reverse_complement())
-           L = len(fwd)-stem_len-1
+        self_comp = []
+        stem_len = 4
+        for i in range(len(grna_hr_df)):
+            fwd = grna_hr_df['Guide Sequence'][i]
+            rvs = str(Seq(fwd).reverse_complement())
+            L = len(fwd)-stem_len-1
 
-           folding = 0
-           for j in range(0,len(fwd)-stem_len):
-               if GC(fwd[j:j+stem_len]) >= 0.5:
-                   if fwd[j:j+stem_len] in rvs[0:(L-j)] or any([fwd[j:j+stem_len] in item for item in backbone_region]):
-                       folding += 1
+            folding = 0
+            for j in range(0,len(fwd)-stem_len):
+                if GC(fwd[j:j+stem_len]) >= 0.5:
+                    if fwd[j:j+stem_len] in rvs[0:(L-j)] or any([fwd[j:j+stem_len] in item for item in backbone_region]):
+                        folding += 1
 
-           self_comp.append(folding)
+            self_comp.append(folding)
 
-       grna_hr_df.insert(loc = 3, column='Self-Complementarity', value = self_comp)
+        grna_hr_df.insert(loc = 3, column='Self-Complementarity', value = self_comp)
 
-       #Remove gRNA located at the end of the chromosomes
-       ind_to_remove = []
-       for i in range(len(grna_hr_df)):
-           if grna_hr_df['Location'][i] < distal_end or grna_hr_df['Location'][i] > grna_hr_df['Chromosome Length'][i] - distal_end:
-               ind_to_remove.append(i)
+        #Remove gRNA located at the end of the chromosomes
+        ind_to_remove = []
+        for i in range(len(grna_hr_df)):
+            if grna_hr_df['Location'][i] < distal_end or grna_hr_df['Location'][i] > grna_hr_df['Chromosome Length'][i] - distal_end:
+                ind_to_remove.append(i)
 
-       grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
+        grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
 
-       #On target scores
-       if len(grna_hr_df) > 0:
+        #On target scores
+        if len(grna_hr_df) > 0:
             if on_target_score_name == 'doench':
                 if pam == 'NGG' and orient == '3prime':
                     on_target_seq = []
@@ -1022,7 +1023,7 @@ def main():
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
 					
-			elif on_target_score_name == 'sgRNA_ecoli(Cas9)':
+            elif on_target_score_name == 'sgRNA_ecoli(Cas9)':
                 if pam == 'NGG' and orient == '3prime':
                     on_target_seq = []
                     for i in range(len(grna_hr_df)):
@@ -1049,114 +1050,114 @@ def main():
             else:
                 grna_hr_df['On-target Score'] = 'NA'
 			
-       if org_ge and protein_file:
-           #Adding essentiality information
-           proteins_query = path + protein_file
-           organism_list = org_ge.split(',')
+        if org_ge and protein_file:
+            #Adding essentiality information
+            proteins_query = path + protein_file
+            organism_list = org_ge.split(',')
 
-           #procuring Essential Gene Database file
-           deg_database = pd.read_csv(deg_file)
+            #procuring Essential Gene Database file
+            deg_database = pd.read_csv(deg_file)
 
-           db = os.path.join(path, protein_file.split('/')[0], 'RefOrg.faa') # BLAST database
-           blastout = os.path.join(path, protein_file.split('/')[0],'blast.tab')  # BLAST output
+            db = os.path.join(path, protein_file.split('/')[0], 'RefOrg.faa') # BLAST database
+            blastout = os.path.join(path, protein_file.split('/')[0],'blast.tab')  # BLAST output
 
-           eg_df = deg_database[deg_database.Organism.isin(organism_list)].reset_index(drop=True).iloc[:,0:2]
+            eg_df = deg_database[deg_database.Organism.isin(organism_list)].reset_index(drop=True).iloc[:,0:2]
 
-           #create RefOrg file 
-           ref_org = path + protein_file.split('/')[0] + '/RefOrg.fasta'
-           write_fasta(ref_org, eg_df)
+            #create RefOrg file 
+            ref_org = path + protein_file.split('/')[0] + '/RefOrg.fasta'
+            write_fasta(ref_org, eg_df)
 
-           #Creating Blast Database
-           blastdb_cmd = '{}makeblastdb -in {} -parse_seqids -dbtype prot -out {}'.format(blast_path, ref_org, db)
-           os.system(blastdb_cmd)
+            #Creating Blast Database
+            blastdb_cmd = '{}makeblastdb -in {} -parse_seqids -dbtype prot -out {}'.format(blast_path, ref_org, db)
+            os.system(blastdb_cmd)
 
-           #Blast
-           cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa',  num_threads=NUM_THREADS)
-           stdout, stderr = cmd_blastp()
+            #Blast
+            cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa',  num_threads=NUM_THREADS)
+            stdout, stderr = cmd_blastp()
 
-           results = pd.read_csv(blastout, sep="\t", header=None)
-           headers = ['query', 'subject',
-                      'pc_identity', 'aln_length', 'mismatches', 'gaps_opened',
-                      'query_start', 'query_end', 'subject_start', 'subject_end',
-                      'e_value', 'bitscore']
+            results = pd.read_csv(blastout, sep="\t", header=None)
+            headers = ['query', 'subject',
+                        'pc_identity', 'aln_length', 'mismatches', 'gaps_opened',
+                        'query_start', 'query_end', 'subject_start', 'subject_end',
+                        'e_value', 'bitscore']
 
-           results.columns = headers
-           #Change BLAST parameters here
-           blast_gene_table = gene_table[(gene_table['# feature']=='CDS') & (gene_table['class']=='with_protein')].reset_index(drop=True)
-	   results_filtered = results.loc[(results['e_value'] < 1e-5) & (results['pc_identity'] >= 50)].reset_index(drop=True)
-           eg_loc_df = blast_gene_table[blast_gene_table['Protein product'].isin(np.unique(list(results_filtered['query'])))].reset_index(drop=True)
+            results.columns = headers
+            #Change BLAST parameters here
+            blast_gene_table = gene_table[(gene_table['# feature']=='CDS') & (gene_table['class']=='with_protein')].reset_index(drop=True)
+            results_filtered = results.loc[(results['e_value'] < 1e-5) & (results['pc_identity'] >= 50)].reset_index(drop=True)
+            eg_loc_df = blast_gene_table[blast_gene_table['Protein product'].isin(np.unique(list(results_filtered['query'])))].reset_index(drop=True)
 
-           chrom_len_array = []
-           for i in range(len(chrom_name_df)):
-               for j in range(len(genome)):
-                   if chrom_name_df['Accession'][i] == genome[j][0]:
-                       chrom_len_array.append(len(genome[j][1]))
+            chrom_len_array = []
+            for i in range(len(chrom_name_df)):
+                for j in range(len(genome)):
+                    if chrom_name_df['Accession'][i] == genome[j][0]:
+                        chrom_len_array.append(len(genome[j][1]))
 
-           chrom_name_df['Length'] = chrom_len_array
+            chrom_name_df['Length'] = chrom_len_array
 
-           chr_eg_zone = []
-           for i in range(len(chrom_name_df)):
-               curr_chr_eg_data = eg_loc_df.loc[eg_loc_df['Accession'] == chrom_name_df['Accession'][i]].sort_values('Start').reset_index(drop=True)
+            chr_eg_zone = []
+            for i in range(len(chrom_name_df)):
+                curr_chr_eg_data = eg_loc_df.loc[eg_loc_df['Accession'] == chrom_name_df['Accession'][i]].sort_values('Start').reset_index(drop=True)
 
-               zone_info = []
-               ini_flag = 0
-               if np.shape(curr_chr_eg_data)[0] > 0:
-                   for j in range(len(curr_chr_eg_data)):
-                       if ini_flag == 0:
-                           zone_info = str(0) + '-' + str(curr_chr_eg_data['Start'][j])
-                           chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
-                           ini_flag = 1
+                zone_info = []
+                ini_flag = 0
+                if np.shape(curr_chr_eg_data)[0] > 0:
+                    for j in range(len(curr_chr_eg_data)):
+                        if ini_flag == 0:
+                            zone_info = str(0) + '-' + str(curr_chr_eg_data['Start'][j])
+                            chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
+                            ini_flag = 1
 
-                       if j == len(curr_chr_eg_data) - 1:
-                           zone_info = str(curr_chr_eg_data['Stop'][j]) + '-' + str(chrom_name_df['Length'][i])
-                       else:
-                           zone_info = str(curr_chr_eg_data['Stop'][j]) + '-' + str(curr_chr_eg_data['Start'][j+1])
+                        if j == len(curr_chr_eg_data) - 1:
+                            zone_info = str(curr_chr_eg_data['Stop'][j]) + '-' + str(chrom_name_df['Length'][i])
+                        else:
+                            zone_info = str(curr_chr_eg_data['Stop'][j]) + '-' + str(curr_chr_eg_data['Start'][j+1])
 
-                       chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
-               else:
-                   zone_info = str(0) + '-' + str(chrom_name_df['Length'][i]) #no essential genes on that chromosome
-                   chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
+                        chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
+                else:
+                    zone_info = str(0) + '-' + str(chrom_name_df['Length'][i]) #no essential genes on that chromosome
+                    chr_eg_zone.append([chrom_name_df['Accession'][i], zone_info])
 
-           chr_eg_zone = pd.DataFrame(chr_eg_zone, columns = ['Acc','Loc'])
+            chr_eg_zone = pd.DataFrame(chr_eg_zone, columns = ['Acc','Loc'])
 
-           zone = []
-           site_loc = []
-           for i in range(len(grna_hr_df)):
-               if grna_hr_df['Strand'][i] == '+':
-                   grna_loc = grna_hr_df['Location'][i]
-                   site_loc.append(grna_loc)
-               else:
-                   grna_loc = grna_hr_df['Chromosome Length'][i] - grna_hr_df['Location'][i]
-                   site_loc.append(grna_loc - glen - len(pam))
+            zone = []
+            site_loc = []
+            for i in range(len(grna_hr_df)):
+                if grna_hr_df['Strand'][i] == '+':
+                    grna_loc = grna_hr_df['Location'][i]
+                    site_loc.append(grna_loc)
+                else:
+                    grna_loc = grna_hr_df['Chromosome Length'][i] - grna_hr_df['Location'][i]
+                    site_loc.append(grna_loc - glen - len(pam))
 
-               for j in range(np.shape(chr_eg_zone)[0]):
-                   if chr_eg_zone['Acc'][j] == grna_hr_df['Accession'][i]:
-                       curr_zone_bound = chr_eg_zone['Loc'][j].split('-')
-                       if grna_loc > int(curr_zone_bound[0]) and grna_loc < int(curr_zone_bound[1]):
-                              zone.append(j+1)
+                for j in range(np.shape(chr_eg_zone)[0]):
+                    if chr_eg_zone['Acc'][j] == grna_hr_df['Accession'][i]:
+                        curr_zone_bound = chr_eg_zone['Loc'][j].split('-')
+                        if grna_loc > int(curr_zone_bound[0]) and grna_loc < int(curr_zone_bound[1]):
+                                zone.append(j+1)
 
-           grna_hr_es_df = grna_hr_df
-           grna_hr_es_df['Zone'] = zone
-           del grna_hr_es_df['Location']
-           grna_hr_es_df.insert(loc = 6, column='Location', value = site_loc)
+            grna_hr_es_df = grna_hr_df
+            grna_hr_es_df['Zone'] = zone
+            del grna_hr_es_df['Location']
+            grna_hr_es_df.insert(loc = 6, column='Location', value = site_loc)
 
-           pd.DataFrame(grna_hr_es_df).to_csv(path + output_file, index = False) #Safe Harbor Data Output
+            pd.DataFrame(grna_hr_es_df).to_csv(path + output_file, index = False) #Safe Harbor Data Output
 
-       else:
-           site_loc = []
-           for i in range(len(grna_hr_df)):
-               if grna_hr_df['Strand'][i] == '+':
-                   site_loc.append(grna_hr_df['Location'][i])
-               else:
-                   site_loc.append(grna_hr_df['Chromosome Length'][i] - grna_hr_df['Location'][i] - glen - len(pam))
+        else:
+            site_loc = []
+            for i in range(len(grna_hr_df)):
+                if grna_hr_df['Strand'][i] == '+':
+                    site_loc.append(grna_hr_df['Location'][i])
+                else:
+                    site_loc.append(grna_hr_df['Chromosome Length'][i] - grna_hr_df['Location'][i] - glen - len(pam))
 
-           del grna_hr_df['Location']
-           grna_hr_df.insert(loc = 6, column='Location', value = site_loc)
+            del grna_hr_df['Location']
+            grna_hr_df.insert(loc = 6, column='Location', value = site_loc)
 
-           pd.DataFrame(grna_hr_df).to_csv(path + output_file, index = False) #Harbor Data Output
+            pd.DataFrame(grna_hr_df).to_csv(path + output_file, index = False) #Harbor Data Output
 
-   else:
-       print('No Safe Harbors can be obtained after applying the specified constraints. Try relaxing the criteria.')
+    else:
+        print('No Safe Harbors can be obtained after applying the specified constraints. Try relaxing the criteria.')
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

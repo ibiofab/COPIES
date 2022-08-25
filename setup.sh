@@ -28,13 +28,6 @@ if [ ! -d "venv38/" ]; then
 	pip install -q -r requirements38.txt
 	echo "OK"
 fi
-if [ ! -d "venv27/" ]; then
-        echo "Python2 virtual environment will be created..."
-        python3 -m venv --copies venv27/
-        source venv27/bin/activate
-        pip install -q -r requirements27.txt
-        echo "OK"
-fi
 
 
 echo "done!"
