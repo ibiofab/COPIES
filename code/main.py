@@ -23,10 +23,21 @@ from Bio.Blast.Applications import NcbiblastpCommandline
 import distance
 import scann
 from Bio.SeqUtils import GC
+from Bio.SeqUtils import MeltingTemp
+import Bio.SeqUtils.MeltingTemp as Tm
 import doench_predict
 import sys
 import multiprocessing as mp
 import math
+from sklearn.ensemble import GradientBoostingRegressor  #GBM algorithm
+from scipy.stats import spearmanr, pearsonr
+from scipy.stats import gaussian_kde
+import pickle
+import h5py as h5
+from keras.models import Sequential, Model
+from keras.layers.core import  Dropout, Activation, Flatten
+from keras.regularizers import l1,l2,l1_l2
+from keras.layers import Conv1D, MaxPooling1D, Dense, LSTM, Bidirectional, BatchNormalization, MaxPooling2D, AveragePooling1D, Input, Multiply, Add, UpSampling1D
 
 NUM_THREADS = mp.cpu_count()
 
@@ -568,6 +579,252 @@ def rs1_score(sequence):
     score_second = np.trace(np.matmul(second_matrix,matrix2))
     score = (1/(1 + math.exp(-(intersect + gc_score + score_first + score_second))))
     return score
+   
+def one_hot_encoding(lines):
+    data_n = len(lines) 
+    SEQ = np.zeros((data_n, len(lines[0]), 4), dtype=int)
+    
+    for l in range(0, data_n):
+        seq = lines[l]
+        for i in range(28):
+            if seq[i] in "Aa":
+                SEQ[l, i, 0] = 1
+            elif seq[i] in "Cc":
+                SEQ[l, i, 1] = 1
+            elif seq[i] in "Gg":
+                SEQ[l, i, 2] = 1
+            elif seq[i] in "Tt":
+                SEQ[l, i, 3] = 1
+
+    return SEQ
+
+def scores_guides_cas9(guides):
+
+    seq = one_hot_encoding(guides)
+    
+    # model architecture
+    SEQ = Input(shape=(28,4))
+    conv_1 = Conv1D(activation="relu", padding="same", strides=1, filters=20, kernel_size=5, kernel_regularizer = l2(0.0001))(SEQ)
+    bat_norm1 = BatchNormalization()(conv_1)
+    pool = MaxPooling1D(pool_size=(2))(bat_norm1)
+    conv_2 = Conv1D(activation="relu", padding="same", strides=1, filters=40, kernel_size=8, kernel_regularizer = l2(0.0001))(pool)
+    bat_norm2 = BatchNormalization()(conv_2)
+    pool_1 = AveragePooling1D(pool_size=(2))(bat_norm2)
+    enc = pool_1
+    dec_pool_1 =  UpSampling1D(size=2)(enc)
+    dec_bat_norm2 = BatchNormalization()(dec_pool_1)
+    dec_conv_2  = Conv1D(activation="relu", padding="same", strides=1, filters=40, kernel_size=8, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_bat_norm2)
+    dec_pool = UpSampling1D(size=2)(dec_conv_2)
+    dec_conv_1 = Conv1D(activation="relu", padding="same", strides=1, filters=20, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_pool)
+    dec = Conv1D(activation="relu", padding="same", strides=1, filters=4, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_pool)
+    model_seq = Model(inputs = SEQ, outputs= dec) 
+    flatten = Flatten()(enc)
+    dropout_1 = Dropout(0.5)(flatten)
+    dense_1 = Dense(80, activation='relu', kernel_initializer='glorot_uniform')(dropout_1)
+    dropout_2 = Dropout(0.5)(dense_1)
+    out = Dense(units=1,  activation="linear")(dropout_2) 
+    model = Model(inputs = SEQ, outputs= out)
+    model.load_weights(sys.path[0] + "/model/cas9_seq_wtt.h5")
+    pred_y = model.predict(seq)
+
+    score = [-1*ele for ele in pred_y.flatten()]
+    
+    return score
+
+def scores_guides_cas12a(guides):
+
+    # one hot encoding
+    seq = one_hot_encoding(guides)
+
+    # model architecture
+    SEQ = Input(shape=(32,4))
+    conv_1 = Conv1D(activation="relu", padding="same", strides=1, filters=20, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(SEQ)
+    bat_norm1 = BatchNormalization()(conv_1)
+    pool = MaxPooling1D(pool_size=(2))(bat_norm1)
+    conv_2 = Conv1D(activation="relu", padding="same", strides=1, filters=40, kernel_size=8, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(pool)
+    bat_norm2 = BatchNormalization()(conv_2)
+    pool_1 = AveragePooling1D(pool_size=(2))(bat_norm2)
+    enc = pool_1
+    dec_pool_1 =  UpSampling1D(size=2)(enc)
+    dec_bat_norm2 = BatchNormalization()(dec_pool_1)
+    dec_conv_2  = Conv1D(activation="relu", padding="same", strides=1, filters=40, kernel_size=8, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_bat_norm2)
+    dec_pool = UpSampling1D(size=2)(dec_conv_2)
+    dec_conv_1 = Conv1D(activation="relu", padding="same", strides=1, filters=20, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_pool)
+    dec = Conv1D(activation="relu", padding="same", strides=1, filters=4, kernel_size=5, kernel_initializer='glorot_uniform',kernel_regularizer = l2(0.0001))(dec_pool)
+    model = Model(inputs = SEQ, outputs= dec)
+    flatten = Flatten()(enc)
+    dropout_1 = Dropout(0.5)(flatten)
+    dense_1 = Dense(80, activation='relu', kernel_initializer='glorot_uniform')(dropout_1)
+    dropout_2 = Dropout(0.5)(dense_1)
+    dense_2 = Dense(units=40,  activation="relu",kernel_initializer='glorot_uniform')(dropout_2)
+    dropout_3 = Dropout(0.5)(dense_2)
+    dense_3 = Dense(units=40,  activation="relu",kernel_initializer='glorot_uniform')(dropout_3)
+    out = Dense(units=1,  activation="linear")(dense_3)
+    model3 = Model(inputs = [SEQ], outputs= out)
+    model3.load_weights(sys.path[0] + "/model/cas12a_wtt.h5")
+
+    # prediction
+    test_x = seq
+    pred_y = model3.predict([test_x])
+
+    score = [-1*ele for ele in pred_y.flatten()]
+
+    return score
+
+def Vector_feature_to_Value_feature(position_feature_depedent_Dic,basepairLst):
+    new_Dic={}
+    for position in position_feature_depedent_Dic:
+        for i,base in enumerate(basepairLst):
+            new_Dic['%s_%s'%(position,base)]=position_feature_depedent_Dic[position][i]
+    return new_Dic
+
+def Order1(sequence):
+    n=len(sequence)
+    seq=sequence
+    baseDic={}
+    order=1
+    baseLst=['A','T','C','G']
+    position_independentDic={}
+    position_dependentDic={}
+    for i,base in enumerate(baseLst):
+        baseDic[base]=np.zeros(4**order)
+        baseDic[base][i]=1 
+        position_independentDic['order1_IP_%s'%(base)]=0
+
+    for i in range(len(seq)):
+        for j,base in enumerate(baseDic):
+            if base==seq[i]:
+                position_dependentDic['order1_P%s'%(i+1)]=baseDic[base]
+                position_independentDic['order1_IP_%s'%(base)]+=1
+
+    position_dependentDic=Vector_feature_to_Value_feature(position_dependentDic,baseLst)
+    Order1_positionDic=dict(list(position_dependentDic.items())+list(position_independentDic.items()))
+    return Order1_positionDic
+
+def Order2(sequence):
+    seq=sequence
+    BasepairDic={}
+    BasepairLst=[]
+    position_dependentDic={}
+    position_independentDic={}
+    order=2
+    baseLst=['A','T','C','G']
+    for base1 in baseLst:
+        for base2 in baseLst:
+            BasepairLst.append(base1+base2)
+    for i in range(len(BasepairLst)):
+        BasepairDic[BasepairLst[i]]=np.zeros(4**order)
+        BasepairDic[BasepairLst[i]][i]=1
+        position_independentDic['order2_IP_%s'%(BasepairLst[i])]=0
+    for i in range(len(seq)-1):
+        seq_pair=seq[i:i+2]
+        for j,basepair in enumerate(BasepairLst):
+            if seq_pair==basepair:
+                position_dependentDic['order2_P%s'%(i+1)]=BasepairDic[basepair]
+                position_independentDic['order2_IP_%s'%(basepair)]+=1
+
+    position_dependentDic=Vector_feature_to_Value_feature(position_dependentDic,BasepairLst)
+    Order2_positonDic=dict(list(position_dependentDic.items())+list(position_independentDic.items()))
+    return Order2_positonDic
+
+def NGGNfeature(sequence):
+    NNDic={}
+    seq=sequence
+    BasepairDic={}
+    BasepairLst=[]
+    baseLst=['A','T','G','C']
+    for base1 in baseLst:
+        for base2 in baseLst:
+            BasepairLst.append(base1+base2)
+    for i in range(len(BasepairLst)):
+        BasepairDic[BasepairLst[i]]=np.zeros(4**2)
+        BasepairDic[BasepairLst[i]][i]=1
+    for basepair in BasepairLst:
+        if basepair == seq:
+            NNDic['NGGN']=BasepairDic[basepair]
+    NNDic=Vector_feature_to_Value_feature(NNDic,BasepairLst)
+    return NNDic
+
+def Temper(sequence):
+    seq=sequence
+    seq_7=seq[:7]
+    seq_8=seq[7:15]
+    seq_5=seq[15:20]
+    TDic={}
+    TDic['T20']=Tm.Tm_NN(seq)
+    TDic['T7']=Tm.Tm_NN(seq_7)
+    TDic['T8']=Tm.Tm_NN(seq_8)
+    TDic['T5']=Tm.Tm_NN(seq_5)
+    return TDic
+
+def complement(sequence):
+    seq=''
+    for rec in sequence:
+        if rec=='A':
+            rec='T'
+        elif rec=='T':
+            rec='A'
+        elif rec=='C':
+            rec='G'
+        else:
+            rec='C'
+        seq+=rec
+    seq=seq[::-1]
+    return seq
+
+def feature(sequence,NGGN):
+    Order1Position=Order1(sequence)
+    Order2Position=Order2(sequence)
+    Temprature=Temper(sequence)
+    NGGN_sequence=NGGNfeature(NGGN)
+    seq_feature=dict(list(Order1Position.items())+list(Order2Position.items())+list(Temprature.items())+list(NGGN_sequence.items()))
+    seq_feature['GC']=float(GC(sequence))/100
+    seq_feature_name=sorted(Order1Position.keys())+sorted(Order2Position.keys())+sorted(Temprature.keys())+sorted(NGGN_sequence.keys())
+    seq_feature_name.append('GC')
+    return seq_feature_name,seq_feature
+
+def get_feature_main(sgRNA_seq_list):
+    sgRNAfastaDic={}
+    sgrnaFeatureDic={}
+    for i in range(len(sgRNA_seq_list)):
+        sgRNAfastaDic[i]=str(sgRNA_seq_list[i]).upper()
+        sgrnaFeatureDic[i]={}
+                
+    featureName=[]
+    for sgrna_name in sgRNAfastaDic:
+        sgrnaSequence=sgRNAfastaDic[sgrna_name][4:24]
+        NGGNSequence=sgRNAfastaDic[sgrna_name][24]+sgRNAfastaDic[sgrna_name][27]
+        featureName,featureValue=feature(sgrnaSequence,NGGNSequence)
+        sgrnaFeatureDic[sgrna_name]=featureValue
+                
+    my_data = pd.DataFrame(sgrnaFeatureDic).T 
+    my_data = my_data.rename_axis('sgRNAID').reset_index()
+    return my_data
+
+def perform_normalization(activity):
+    max_value=np.nanmax(activity)
+    min_value=np.nanmin(activity)
+    scaler=max_value-min_value
+    return (activity-min_value)/scaler
+
+def GBR_pred_main(sgRNA_seq_list, id_column, model, normalization):
+    my_data = get_feature_main(sgRNA_seq_list) 
+    gbm_tuned=pickle.load(open(model,'rb'))
+    
+    predictors = [x for x in my_data.columns if x!=id_column]
+
+    activity=gbm_tuned.predict(my_data[predictors])
+    if normalization:
+        activity=perform_normalization(activity)
+        
+    result = pd.concat([my_data[id_column], pd.Series(activity, name='score')], axis=1)
+    return list(result['score'])
+
+def score_guides_bacteria(model_name, sgRNA_seq_list):
+    varlist = {'model': model_name.split('(')[1].split(')')[0], 'normalization': 'Yes'}    
+    id_column='sgRNAID'
+    model='model/Cas9_sgRNA_activity_GBR.pickle' if varlist['model']=='Cas9' else 'model/eSpCas9_sgRNA_activity_GBR.pickle'
+    output = GBR_pred_main(sgRNA_seq_list, id_column, model, varlist['normalization'])
 
 def write_fasta(name, sequence_df):
     out_file = open(name, "w")
@@ -623,8 +880,10 @@ def main():
 
    #Data Processing
    genome = read_fasta(path + genome_file)
-   gene_table = pd.read_csv(path + gene_file)
-   refined_gene_table = gene_table[['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']]
+   total_gene_table = pd.read_csv(path + gene_file, sep = '\t')
+   gene_table = total_gene_table[total_gene_table['assembly_unit'] == 'Primary Assembly'][['# feature','class','chromosome','genomic_accession','start','end','strand','locus_tag','product_accession']].reset_index(drop=True)
+   gene_table.columns = ['# feature','class','#Name','Accession', 'Start', 'Stop', 'Strand', 'Locus tag','Protein product']
+   refined_gene_table = gene_table[gene_table['# feature']=='gene'][['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']].reset_index(drop=True)
    pam_library = pam_to_search(pam,iupac_code)
    ambiguous_nucleotides = list(iupac_code.keys())[4:]
 
@@ -705,24 +964,91 @@ def main():
 
        grna_hr_df = grna_hr_df.drop(ind_to_remove).reset_index(drop=True)
 
+       #On target scores
        if len(grna_hr_df) > 0:
-           if pam == 'NGG' and orient == '3prime':
-               on_target_seq = []
-               for i in range(len(grna_hr_df)):
-                   if len(grna_hr_df['Guide Sequence'][i]) < 24:
-                       on_target_seq.append(grna_hr_df['Left HR'][i][len(grna_hr_df['Guide Sequence'][i])-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-                   else:
-                       on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+            if on_target_score_name == 'doench':
+                if pam == 'NGG' and orient == '3prime':
+                    on_target_seq = []
+                    for i in range(len(grna_hr_df)):
+                        if glen < 24:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][glen-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                        else:
+                            on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                            
+                    grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
+                    
+                else:
+                    grna_hr_df['On-target Score'] = 'NA'
+                
+            elif on_target_score_name == 'cropsr':
+                if pam == 'NGG' and orient == '3prime':
+                    on_target_seq = []
+                    for i in range(len(grna_hr_df)):
+                        if glen < 24:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][glen-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                        else:
+                            on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                    
+                    grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
+                    
+                else:
+                    grna_hr_df['On-target Score'] = 'NA'
+                    
+            elif on_target_score_name == 'deepguide(Cas9)':
+                if pam == 'NGG' and orient == '3prime':
+                    on_target_seq = []
+                    for i in range(len(grna_hr_df)):
+                        if glen < 22:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][glen-22:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                        else:
+                            on_target_seq.append(grna_hr_df['Guide Sequence'][i][-22:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                            
+                    grna_hr_df['On-target Score'] = scores_guides_cas9(on_target_seq)
+                    
+                else:
+                    grna_hr_df['On-target Score'] = 'NA'
+                
+            elif on_target_score_name == 'deepGuide(Cas12a)':
+                if pam == 'TTTV' and orient == '5prime':
+                    on_target_seq = []
+                    for i in range(len(grna_hr_df)):
+                        if glen < 27:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][-1:] + grna_hr_df['PAM'][i] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['Right HR'][i][0:27-glen])
+                        else:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][-1:] + grna_hr_df['PAM'][i] + grna_hr_df['Guide Sequence'][i][0:27])
 
-               if on_target_score_name == 'doench':
-                   grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=NUM_THREADS)
+                    grna_hr_df['On-target Score'] = scores_guides_cas12a(on_target_seq)
 
-               elif on_target_score_name == 'cropsr':
-                   grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
-
-           else:
-               grna_hr_df['On-target Score'] = 'Not Available'
-
+                else:
+                    grna_hr_df['On-target Score'] = 'NA'
+					
+			elif on_target_score_name == 'sgRNA_ecoli(Cas9)':
+                if pam == 'NGG' and orient == '3prime':
+                    on_target_seq = []
+                    for i in range(len(grna_hr_df)):
+                        if glen < 24:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][glen-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                        else:
+                            on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                    
+                    #sgRNA ecoli scoring
+                    grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, on_target_seq)
+                    
+            elif on_target_score_name == 'sgRNA_ecoli(eSpCas9)':
+                if pam == 'NGG' and orient == '3prime':
+                    on_target_seq = []
+                    for i in range(len(grna_hr_df)):
+                        if glen < 24:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][glen-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                        else:
+                            on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                    
+                    #sgRNA ecoli scoring
+                    grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, on_target_seq)
+            
+            else:
+                grna_hr_df['On-target Score'] = 'NA'
+			
        if org_ge and protein_file:
            #Adding essentiality information
            proteins_query = path + protein_file
@@ -756,8 +1082,9 @@ def main():
 
            results.columns = headers
            #Change BLAST parameters here
-           results_filtered = results.loc[(results['e_value'] < 1e-5) & (results['pc_identity'] >= 50)].reset_index(drop=True)
-           eg_loc_df = gene_table[gene_table['Protein product'].isin(np.unique(list(results_filtered['query'])))].reset_index(drop=True)
+           blast_gene_table = gene_table[(gene_table['# feature']=='CDS') & (gene_table['class']=='with_protein')].reset_index(drop=True)
+	   results_filtered = results.loc[(results['e_value'] < 1e-5) & (results['pc_identity'] >= 50)].reset_index(drop=True)
+           eg_loc_df = blast_gene_table[blast_gene_table['Protein product'].isin(np.unique(list(results_filtered['query'])))].reset_index(drop=True)
 
            chrom_len_array = []
            for i in range(len(chrom_name_df)):
@@ -856,6 +1183,6 @@ if __name__ == "__main__":
     parser.add_argument('--protein_file', type=str, default='', help="Fasta file containing protein sequences.")
     parser.add_argument('--blast_org', type=str, default='',  help="Name of the oprganism/s to blast proteins against to identify probable essential genes.")
     parser.add_argument('--distal_end_len', type=int, default=5000,  help="Remove guide RNA located within this distance from the end of the chromosome. Value is dependent on the organism of interest. Note for NGG PAM, enter a value greater than the length of the homology arms.")
-    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: 'doench','crospr.")
+    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: doench, crospr, deepguide(Cas9), deepguide(Cas12a), sgRNA_ecoli(Cas9), sgRNA_ecoli(eSpCas9).")
     args = parser.parse_args()
     main()
