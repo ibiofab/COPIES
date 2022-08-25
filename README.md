@@ -18,7 +18,9 @@ This repository accompanies the work ["COPIES, an in-silico platform for screeni
 </details>
 
 ### Installation
-
+```
+pip install -r requirements38.txt
+```
 ### Usage
 
 #### Command Line
