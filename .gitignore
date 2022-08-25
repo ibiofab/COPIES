@@ -1,6 +1,8 @@
 
 blast/
 venv/
+venv38/
+venv27/
 data/
 essential\ genes/
 

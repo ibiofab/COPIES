@@ -21,13 +21,21 @@ if [ ! -d "blast/" ]; then
 	fi
 
 fi
-if [ ! -d "venv/" ]; then
-	echo "Python virtual environment will be created..."
-	python3 -m venv --copies venv/
-	source venv/bin/activate
-	pip install -q -r requirements.txt
+if [ ! -d "venv38/" ]; then
+	echo "Python3 virtual environment will be created..."
+	python3 -m venv --copies venv38/
+	source venv38/bin/activate
+	pip install -q -r requirements38.txt
 	echo "OK"
 fi
+if [ ! -d "venv27/" ]; then
+        echo "Python2 virtual environment will be created..."
+        python3 -m venv --copies venv27/
+        source venv27/bin/activate
+        pip install -q -r requirements27.txt
+        echo "OK"
+fi
+
 
 echo "done!"
 echo "don't forget to copy files into data/ and essential genes/"
