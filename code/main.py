@@ -1022,7 +1022,7 @@ def main():
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
 					
-			elif on_target_score_name == 'sgRNA_ecoli(Cas9)':
+	    elif on_target_score_name == 'sgRNA_ecoli(Cas9)':
                 if pam == 'NGG' and orient == '3prime':
                     on_target_seq = []
                     for i in range(len(grna_hr_df)):
