@@ -23,10 +23,16 @@ from Bio.Blast.Applications import NcbiblastpCommandline
 import distance
 import scann
 from Bio.SeqUtils import GC
+from Bio.SeqUtils import MeltingTemp
+import Bio.SeqUtils.MeltingTemp as Tm
 import doench_predict
 import sys
 import multiprocessing as mp
 import math
+from sklearn.ensemble import GradientBoostingRegressor  #GBM algorithm
+from scipy.stats import spearmanr, pearsonr
+from scipy.stats import gaussian_kde
+import pickle
 import h5py as h5
 from keras.models import Sequential, Model
 from keras.layers.core import  Dropout, Activation, Flatten
@@ -665,6 +671,161 @@ def scores_guides_cas12a(guides):
 
     return score
 
+def Vector_feature_to_Value_feature(position_feature_depedent_Dic,basepairLst):
+    new_Dic={}
+    for position in position_feature_depedent_Dic:
+        for i,base in enumerate(basepairLst):
+            new_Dic['%s_%s'%(position,base)]=position_feature_depedent_Dic[position][i]
+    return new_Dic
+
+def Order1(sequence):
+    n=len(sequence)
+    seq=sequence
+    baseDic={}
+    order=1
+    baseLst=['A','T','C','G']
+    position_independentDic={}
+    position_dependentDic={}
+    for i,base in enumerate(baseLst):
+        baseDic[base]=np.zeros(4**order)
+        baseDic[base][i]=1 
+        position_independentDic['order1_IP_%s'%(base)]=0
+
+    for i in range(len(seq)):
+        for j,base in enumerate(baseDic):
+            if base==seq[i]:
+                position_dependentDic['order1_P%s'%(i+1)]=baseDic[base]
+                position_independentDic['order1_IP_%s'%(base)]+=1
+
+    position_dependentDic=Vector_feature_to_Value_feature(position_dependentDic,baseLst)
+    Order1_positionDic=dict(list(position_dependentDic.items())+list(position_independentDic.items()))
+    return Order1_positionDic
+
+def Order2(sequence):
+    seq=sequence
+    BasepairDic={}
+    BasepairLst=[]
+    position_dependentDic={}
+    position_independentDic={}
+    order=2
+    baseLst=['A','T','C','G']
+    for base1 in baseLst:
+        for base2 in baseLst:
+            BasepairLst.append(base1+base2)
+    for i in range(len(BasepairLst)):
+        BasepairDic[BasepairLst[i]]=np.zeros(4**order)
+        BasepairDic[BasepairLst[i]][i]=1
+        position_independentDic['order2_IP_%s'%(BasepairLst[i])]=0
+    for i in range(len(seq)-1):
+        seq_pair=seq[i:i+2]
+        for j,basepair in enumerate(BasepairLst):
+            if seq_pair==basepair:
+                position_dependentDic['order2_P%s'%(i+1)]=BasepairDic[basepair]
+                position_independentDic['order2_IP_%s'%(basepair)]+=1
+
+    position_dependentDic=Vector_feature_to_Value_feature(position_dependentDic,BasepairLst)
+    Order2_positonDic=dict(list(position_dependentDic.items())+list(position_independentDic.items()))
+    return Order2_positonDic
+
+def NGGNfeature(sequence):
+    NNDic={}
+    seq=sequence
+    BasepairDic={}
+    BasepairLst=[]
+    baseLst=['A','T','G','C']
+    for base1 in baseLst:
+        for base2 in baseLst:
+            BasepairLst.append(base1+base2)
+    for i in range(len(BasepairLst)):
+        BasepairDic[BasepairLst[i]]=np.zeros(4**2)
+        BasepairDic[BasepairLst[i]][i]=1
+    for basepair in BasepairLst:
+        if basepair == seq:
+            NNDic['NGGN']=BasepairDic[basepair]
+    NNDic=Vector_feature_to_Value_feature(NNDic,BasepairLst)
+    return NNDic
+
+def Temper(sequence):
+    seq=sequence
+    seq_7=seq[:7]
+    seq_8=seq[7:15]
+    seq_5=seq[15:20]
+    TDic={}
+    TDic['T20']=Tm.Tm_NN(seq)
+    TDic['T7']=Tm.Tm_NN(seq_7)
+    TDic['T8']=Tm.Tm_NN(seq_8)
+    TDic['T5']=Tm.Tm_NN(seq_5)
+    return TDic
+
+def complement(sequence):
+    seq=''
+    for rec in sequence:
+        if rec=='A':
+            rec='T'
+        elif rec=='T':
+            rec='A'
+        elif rec=='C':
+            rec='G'
+        else:
+            rec='C'
+        seq+=rec
+    seq=seq[::-1]
+    return seq
+
+def feature(sequence,NGGN):
+    Order1Position=Order1(sequence)
+    Order2Position=Order2(sequence)
+    Temprature=Temper(sequence)
+    NGGN_sequence=NGGNfeature(NGGN)
+    seq_feature=dict(list(Order1Position.items())+list(Order2Position.items())+list(Temprature.items())+list(NGGN_sequence.items()))
+    seq_feature['GC']=float(GC(sequence))/100
+    seq_feature_name=sorted(Order1Position.keys())+sorted(Order2Position.keys())+sorted(Temprature.keys())+sorted(NGGN_sequence.keys())
+    seq_feature_name.append('GC')
+    return seq_feature_name,seq_feature
+
+def get_feature_main(sgRNA_seq_list):
+    sgRNAfastaDic={}
+    sgrnaFeatureDic={}
+    for i in range(len(sgRNA_seq_list)):
+        sgRNAfastaDic[i]=str(sgRNA_seq_list[i]).upper()
+        sgrnaFeatureDic[i]={}
+                
+    featureName=[]
+    for sgrna_name in sgRNAfastaDic:
+        sgrnaSequence=sgRNAfastaDic[sgrna_name][4:24]
+        NGGNSequence=sgRNAfastaDic[sgrna_name][24]+sgRNAfastaDic[sgrna_name][27]
+        featureName,featureValue=feature(sgrnaSequence,NGGNSequence)
+        sgrnaFeatureDic[sgrna_name]=featureValue
+                
+    my_data = pd.DataFrame(sgrnaFeatureDic).T 
+    my_data = my_data.rename_axis('sgRNAID').reset_index()
+    return my_data
+
+def perform_normalization(activity):
+    max_value=np.nanmax(activity)
+    min_value=np.nanmin(activity)
+    scaler=max_value-min_value
+    return (activity-min_value)/scaler
+
+def GBR_pred_main(sgRNA_seq_list, id_column, model, normalization):
+    my_data = get_feature_main(sgRNA_seq_list) 
+    gbm_tuned=pickle.load(open(model,'rb'))
+    
+    predictors = [x for x in my_data.columns if x!=id_column]
+
+    activity=gbm_tuned.predict(my_data[predictors])
+    if normalization:
+        activity=perform_normalization(activity)
+        
+    result = pd.concat([my_data[id_column], pd.Series(activity, name='score')], axis=1)
+    return list(result['score'])
+
+def score_guides_bacteria(model_name, sgRNA_seq_list):
+    varlist = {'model': model_name.split('(')[1].split(')')[0], 'normalization': 'Yes'}    
+    id_column='sgRNAID'
+    model='model/Cas9_sgRNA_activity_GBR.pickle' if varlist['model']=='Cas9' else 'model/eSpCas9_sgRNA_activity_GBR.pickle'
+    output = GBR_pred_main(sgRNA_seq_list, id_column, model, varlist['normalization'])
+
 def write_fasta(name, sequence_df):
     out_file = open(name, "w")
     for i in range(len(sequence_df)):
@@ -860,6 +1021,30 @@ def main():
 
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
+					
+			elif on_target_score_name == 'sgRNA_ecoli(Cas9)':
+                if pam == 'NGG' and orient == '3prime':
+                    on_target_seq = []
+                    for i in range(len(grna_hr_df)):
+                        if glen < 24:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][glen-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                        else:
+                            on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                    
+                    #sgRNA ecoli scoring
+                    grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, on_target_seq)
+                    
+            elif on_target_score_name == 'sgRNA_ecoli(eSpCas9)':
+                if pam == 'NGG' and orient == '3prime':
+                    on_target_seq = []
+                    for i in range(len(grna_hr_df)):
+                        if glen < 24:
+                            on_target_seq.append(grna_hr_df['Left HR'][i][glen-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                        else:
+                            on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
+                    
+                    #sgRNA ecoli scoring
+                    grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, on_target_seq)
             
             else:
                 grna_hr_df['On-target Score'] = 'NA'
@@ -998,6 +1183,6 @@ if __name__ == "__main__":
     parser.add_argument('--protein_file', type=str, default='', help="Fasta file containing protein sequences.")
     parser.add_argument('--blast_org', type=str, default='',  help="Name of the oprganism/s to blast proteins against to identify probable essential genes.")
     parser.add_argument('--distal_end_len', type=int, default=5000,  help="Remove guide RNA located within this distance from the end of the chromosome. Value is dependent on the organism of interest. Note for NGG PAM, enter a value greater than the length of the homology arms.")
-    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: doench, crospr, deepguide(Cas9), deepguide(Cas12a).")
+    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: doench, crospr, deepguide(Cas9), deepguide(Cas12a), sgRNA_ecoli(Cas9), sgRNA_ecoli(eSpCas9).")
     args = parser.parse_args()
     main()
