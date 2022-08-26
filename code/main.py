@@ -291,14 +291,18 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     norm_xb = xb/np.round(np.sqrt(glen),4)
     del xb
     
+    train_data_size = len(complete_grna_library_wo_pam)
+    number_of_partitions = int(np.sqrt(train_data_size))
+    number_of_partition_to_search = int(number_of_partitions/20)
+    
     searcher = scann.scann_ops_pybind.builder(norm_xb, 10, "dot_product").tree(
-    num_leaves=2000, num_leaves_to_search=100, training_sample_size=5000000).score_ah(
+    num_leaves = number_of_partitions, num_leaves_to_search = number_of_partition_to_search, training_sample_size=train_data_size).score_ah(
     2, anisotropic_quantization_threshold=0.2).reorder(100).build()
     del norm_xb
     
     xq = one_hot(grna_wo_pam_us_f)
     len_xq = len(xq)
-    neighbors = searcher.search_batched(xq, leaves_to_search=250, pre_reorder_num_neighbors=250)[0]
+    neighbors = searcher.search_batched(xq, leaves_to_search=number_of_partition_to_search, pre_reorder_num_neighbors=number_of_partition_to_search)[0]
     del xq
     
     unique_grna_library_mm = []
