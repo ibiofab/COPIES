@@ -4,9 +4,11 @@
  This file is part of COPIES, which is released under specific terms.  See file License.txt file for full license details.
 """
 
+import random
 #paths
 # directories will be relative to script source.
-path = '../data/'
+path = ''
+temporary = "/tmp/" + "TMP_COPIES_{:010x}".format(random.randrange(16**10)).upper()
 deg_file = '../essential genes/deg.csv'
 blast_path = '../blast/bin/'
 
@@ -43,6 +45,7 @@ NUM_THREADS = mp.cpu_count()
 
 # change working directory to script directory
 os.chdir(os.path.dirname(sys.argv[0]))
+os.mkdir(temporary)
 
 #Functions
 def read_fasta(name):
@@ -1056,19 +1059,19 @@ def main():
 			
         if org_ge and protein_file:
             #Adding essentiality information
-            proteins_query = path + protein_file
+            #proteins_query = path + protein_file
             organism_list = org_ge.split(',')
 
             #procuring Essential Gene Database file
             deg_database = pd.read_csv(deg_file)
 
-            db = os.path.join(path, protein_file.split('/')[0], 'RefOrg.faa') # BLAST database
-            blastout = os.path.join(path, protein_file.split('/')[0],'blast.tab')  # BLAST output
+            db = os.path.join(temporary, 'RefOrg.faa') # BLAST database
+            blastout = os.path.join(temporary, 'blast.tab')  # BLAST output
 
             eg_df = deg_database[deg_database.Organism.isin(organism_list)].reset_index(drop=True).iloc[:,0:2]
 
             #create RefOrg file 
-            ref_org = path + protein_file.split('/')[0] + '/RefOrg.fasta'
+            ref_org = os.path.join(temporary, 'RefOrg.fasta') 
             write_fasta(ref_org, eg_df)
 
             #Creating Blast Database
@@ -1076,7 +1079,7 @@ def main():
             os.system(blastdb_cmd)
 
             #Blast
-            cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = proteins_query, out = blastout, outfmt = 6, db = path + protein_file.split('/')[0] + '/RefOrg.faa',  num_threads=NUM_THREADS)
+            cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = protein_file, out = blastout, outfmt = 6, db = db,  num_threads=NUM_THREADS)
             stdout, stderr = cmd_blastp()
 
             results = pd.read_csv(blastout, sep="\t", header=None)
