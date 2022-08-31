@@ -886,6 +886,30 @@ def main():
     distal_end = args.distal_end_len
     on_target_score_name = args.on_target
 
+    if args.lookup == None:
+        print("Lookup not specified. Genome, Gene Table, and protein file must be specified manually.")
+    else:
+        index = {}
+        with open(os.environ['SEARCH_IDX'], "r") as f:
+            for line in f.read().splitlines():
+                b = line.split(",")
+                index[b[0]] = b[1]  
+        selected = ""
+        for key in index.keys():
+            if args.lookup in key:
+                selected = key
+                break
+        if selected == "":
+            print("Organism {} not found.".format(args.lookup))
+            sys.exit(0)
+        print("Selected organism is {}.".format(selected))
+        print("Make sure this is correct.")
+        genome_file = os.path.join(index[selected], os.path.split(index[selected])[-1]+"_genomic.fna")
+        gene_file = os.path.join(index[selected], os.path.split(index[selected])[-1]+"_feature_table.txt")
+        protein_file = os.path.join(index[selected], os.path.split(index[selected])[-1]+"_protein.faa")
+        del index
+
+
     #Data Processing
     genome = read_fasta(path + genome_file)
     total_gene_table = pd.read_csv(path + gene_file, sep = '\t')
@@ -1168,8 +1192,9 @@ def main():
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--Genome', help="Genome filename", required=True)
-    parser.add_argument('-t', '--Gene_table', help="Gene table filename", required=True)
+    parser.add_argument('-look', '--lookup', help="Pick genome, gene_table, and protein file from database with a fuzzy text search.", required=False)
+    parser.add_argument('-g', '--Genome', help="Genome filename", required=False)
+    parser.add_argument('-t', '--Gene_table', help="Gene table filename", required=False)
     parser.add_argument('-out', '--Output_file', default = 'output.csv', help="Name of the output file")
     parser.add_argument('-p', '--PAM', type=str, default='NGG', help="A short PAM motif to search for, it may use IUPAC ambiguous alphabet. Default: NGG.", required=True)
     parser.add_argument('-o', '--Orientation', choices=['3prime', '5prime'], default='3prime', help="PAM position relative to target: 5prime: [PAM][target], 3prime: [target][PAM]. For example, PAM orientation for SpCas9 is 3prime. Default: 3prime.")
