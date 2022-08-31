@@ -4,13 +4,16 @@
  This file is part of COPIES, which is released under specific terms.  See file License.txt file for full license details.
 """
 
-import random
+import random,sys,os
+if "LAMBDA_LIBS" in os.environ:
+    sys.path.append(os.environ["LAMBDA_LIBS"])
+
 #paths
 # directories will be relative to script source.
 path = ''
 temporary = "/tmp/" + "TMP_COPIES_{:010x}".format(random.randrange(16**10)).upper()
-deg_file = '../essential genes/deg.csv'
-blast_path = '../blast/bin/'
+deg_file = '../../essential_genes/deg.csv'
+blast_path = '../../blast/bin/'
 
 #Modules
 import numpy as np
@@ -895,8 +898,9 @@ def main():
                 b = line.split(",")
                 index[b[0]] = b[1]  
         selected = ""
+        ll = args.lookup.lower()
         for key in index.keys():
-            if args.lookup in key:
+            if ll in key.lower():
                 selected = key
                 break
         if selected == "":
