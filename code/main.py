@@ -4,7 +4,10 @@
  This file is part of COPIES, which is released under specific terms.  See file License.txt file for full license details.
 """
 
-import random
+import random,sys,os
+if "LAMBDA_LIBS" in os.environ:
+    sys.path.append(os.environ["LAMBDA_LIBS"])
+
 #paths
 # directories will be relative to script source.
 path = ''
