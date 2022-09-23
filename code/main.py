@@ -9,8 +9,8 @@ import random
 # directories will be relative to script source.
 path = ''
 temporary = "/tmp/" + "TMP_COPIES_{:010x}".format(random.randrange(16**10)).upper()
-deg_file = '../essential genes/deg.csv'
-blast_path = '../blast/bin/'
+deg_file = '../../essential_genes/deg.csv'
+blast_path = '../../blast/bin/'
 
 #Modules
 import numpy as np
@@ -841,6 +841,26 @@ def write_fasta(name, sequence_df):
         out_file.write(sequence_df['Sequence'][i] + '\n')
     out_file.close()
 
+def ambg_nt_replacement(seq_list, ambiguous_nucleotides):
+    for i in range(len(seq_list)):
+        text = seq_list[i]
+        if any(s in text for s in ambiguous_nucleotides):
+            text = text.replace('M', 'A')
+            text = text.replace('R', 'A')
+            text = text.replace('W', 'A')
+            text = text.replace('S', 'C')
+            text = text.replace('Y', 'C')
+            text = text.replace('K', 'G')
+            text = text.replace('V', 'A')
+            text = text.replace('H', 'A')
+            text = text.replace('D', 'A')
+            text = text.replace('B', 'C')
+            text = text.replace('N', 'A')
+        
+            seq_list[i] = text
+        
+    return seq_list
+
 #IUPAC Code
 iupac_code = {
   "A": "A",
@@ -895,8 +915,9 @@ def main():
                 b = line.split(",")
                 index[b[0]] = b[1]  
         selected = ""
+        ll = args.lookup.lower()
         for key in index.keys():
-            if args.lookup in key:
+            if ll in key.lower():
                 selected = key
                 break
         if selected == "":
@@ -1006,8 +1027,8 @@ def main():
                             on_target_seq.append(grna_hr_df['Left HR'][i][glen-24:] + grna_hr_df['Guide Sequence'][i] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
                         else:
                             on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
-                            
-                    grna_hr_df['On-target Score'] = doench_predict.predict(np.array(on_target_seq), num_threads=1)
+
+                    grna_hr_df['On-target Score'] = doench_predict.predict(np.array(ambg_nt_replacement(on_target_seq, ambiguous_nucleotides)), num_threads=1)
                     
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
@@ -1021,7 +1042,7 @@ def main():
                         else:
                             on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
                     
-                    grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(on_target_seq)
+                    grna_hr_df['On-target Score'] = np.vectorize(rs1_score)(ambg_nt_replacement(on_target_seq, ambiguous_nucleotides))
                     
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
@@ -1035,7 +1056,7 @@ def main():
                         else:
                             on_target_seq.append(grna_hr_df['Guide Sequence'][i][-22:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
                             
-                    grna_hr_df['On-target Score'] = scores_guides_cas9(on_target_seq)
+                    grna_hr_df['On-target Score'] = scores_guides_cas9(ambg_nt_replacement(on_target_seq, ambiguous_nucleotides))
                     
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
@@ -1049,7 +1070,7 @@ def main():
                         else:
                             on_target_seq.append(grna_hr_df['Left HR'][i][-1:] + grna_hr_df['PAM'][i] + grna_hr_df['Guide Sequence'][i][0:27])
 
-                    grna_hr_df['On-target Score'] = scores_guides_cas12a(on_target_seq)
+                    grna_hr_df['On-target Score'] = scores_guides_cas12a(ambg_nt_replacement(on_target_seq, ambiguous_nucleotides))
 
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
@@ -1064,7 +1085,7 @@ def main():
                             on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
                     
                     #sgRNA ecoli scoring
-                    grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, on_target_seq)
+                    grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, ambg_nt_replacement(on_target_seq, ambiguous_nucleotides))
                     
             elif on_target_score_name == 'sgRNA_ecoli(eSpCas9)':
                 if pam == 'NGG' and orient == '3prime':
@@ -1076,7 +1097,7 @@ def main():
                             on_target_seq.append(grna_hr_df['Guide Sequence'][i][-24:] + grna_hr_df['PAM'][i] + grna_hr_df['Right HR'][i][0:3])
                     
                     #sgRNA ecoli scoring
-                    grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, on_target_seq)
+                    grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, ambg_nt_replacement(on_target_seq, ambiguous_nucleotides))
             
             else:
                 grna_hr_df['On-target Score'] = 'NA'
