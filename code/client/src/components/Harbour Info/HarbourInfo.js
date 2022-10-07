@@ -1,5 +1,5 @@
 import React from 'react'
-import InputGroup from '../DropdownInput'
+import InputGroup from '../InputGroup'
 
 const HarbourInfo = () => {
     const fields = [
