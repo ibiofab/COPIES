@@ -5,8 +5,6 @@
 """
 
 import random,sys,os
-if "LAMBDA_LIBS" in os.environ:
-    sys.path.append(os.environ["LAMBDA_LIBS"])
 
 #paths
 # directories will be relative to script source.
@@ -43,12 +41,16 @@ from keras.models import Sequential, Model
 from keras.layers.core import  Dropout, Activation, Flatten
 from keras.regularizers import l1,l2,l1_l2
 from keras.layers import Conv1D, MaxPooling1D, Dense, LSTM, Bidirectional, BatchNormalization, MaxPooling2D, AveragePooling1D, Input, Multiply, Add, UpSampling1D
+import time
 
 NUM_THREADS = mp.cpu_count()
 
 # change working directory to script directory
 os.chdir(os.path.dirname(sys.argv[0]))
 os.mkdir(temporary)
+
+scann_time = 0
+blast_time = 0
 
 #Functions
 def read_fasta(name):
@@ -301,6 +303,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     number_of_partitions = int(np.sqrt(train_data_size))
     number_of_partition_to_search = int(number_of_partitions/20)
     
+    start_scann = time.perf_counter()
     searcher = scann.scann_ops_pybind.builder(norm_xb, 10, "dot_product").tree(
     num_leaves = number_of_partitions, num_leaves_to_search = number_of_partition_to_search, training_sample_size=train_data_size).score_ah(
     2, anisotropic_quantization_threshold=0.2).reorder(100).build()
@@ -310,6 +313,9 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     len_xq = len(xq)
     neighbors = searcher.search_batched(xq, leaves_to_search=number_of_partition_to_search, pre_reorder_num_neighbors=number_of_partition_to_search)[0]
     del xq
+    stop_scann = time.perf_counter()
+    global scann_time
+    scann_time = stop_scann - start_scann
     
     unique_grna_library_mm = []
     k_to_check = 3 #knearest neighbor search
@@ -1122,6 +1128,7 @@ def main():
             ref_org = os.path.join(temporary, 'RefOrg.fasta') 
             write_fasta(ref_org, eg_df)
 
+            blast_start = time.perf_counter()
             #Creating Blast Database
             blastdb_cmd = '{}makeblastdb -in {} -parse_seqids -dbtype prot -out {}'.format(blast_path, ref_org, db)
             os.system(blastdb_cmd)
@@ -1129,6 +1136,9 @@ def main():
             #Blast
             cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = protein_file, out = blastout, outfmt = 6, db = db,  num_threads=NUM_THREADS)
             stdout, stderr = cmd_blastp()
+            blast_stop = time.perf_counter()
+            global blast_time
+            blast_time = blast_stop - blast_start
 
             results = pd.read_csv(blastout, sep="\t", header=None)
             headers = ['query', 'subject',
@@ -1213,6 +1223,10 @@ def main():
 
     else:
         print('No Safe Harbors can be obtained after applying the specified constraints. Try relaxing the criteria.')
+
+    print("=================================")
+    print("scann time, blast time")
+    print("{},{}".format(scann_time, blast_time))
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
