@@ -9,7 +9,8 @@ from bokeh.plotting import figure, output_file, show, save
 from bokeh.models import ColumnDataSource, HoverTool, BasicTickFormatter
 
 #Datas
-df = pd.read_csv(sys.argv[1])
+df = pd.read_csv(sys.argv[1], dtype={"Chromosome": "string"})
+df["Chromosome"] = df["Chromosome"].fillna("NO NAME")
 
 #Processing
 chr_names = np.unique(list(df['Chromosome']))
@@ -35,7 +36,8 @@ y = list(chr_df['ID'])
 y_pos = np.arange(len(y)) + 0.5
 y_dict = {y_pos[i]: y[i] for i in range(len(y_pos))}
 
-p = figure(title = "Genomic Safe Harbors", plot_width = 800, plot_height = 200, y_range = y)
+
+p = figure(title = "Genomic Safe Harbors", sizing_mode="stretch_both", y_range = y)
   
 #plotting the graph
 p.hbar(y_pos, right = len_list, height = 0.6, alpha = 0.2)
@@ -77,3 +79,9 @@ p.xaxis.formatter = BasicTickFormatter(use_scientific=False)
 
 output_file(sys.argv[2])
 save(p)
+with open(sys.argv[2], "r+") as f:
+    fd = f.read()
+    f.seek(0)
+    f.truncate(0)
+    fd = fd.replace("<head>", "<head><style>html,body{margin:0;height:100%;}</style>")
+    f.write(fd)
