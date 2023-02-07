@@ -1028,7 +1028,7 @@ def main():
 
         #On target scores
         if len(grna_hr_df) > 0:
-            if on_target_score_name == 'doench':
+            if on_target_score_name == 'Doench et al. 2016':
                 if pam == 'NGG' and orient == '3prime':
                     on_target_seq = []
                     for i in range(len(grna_hr_df)):
@@ -1042,7 +1042,7 @@ def main():
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
                 
-            elif on_target_score_name == 'cropsr':
+            elif on_target_score_name == 'CROPSR':
                 if pam == 'NGG' and orient == '3prime':
                     on_target_seq = []
                     for i in range(len(grna_hr_df)):
@@ -1056,7 +1056,7 @@ def main():
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
                     
-            elif on_target_score_name == 'deepguide(Cas9)':
+            elif on_target_score_name == 'DeepGuide (Cas9)':
                 if pam == 'NGG' and orient == '3prime':
                     on_target_seq = []
                     for i in range(len(grna_hr_df)):
@@ -1070,7 +1070,7 @@ def main():
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
                 
-            elif on_target_score_name == 'deepGuide(Cas12a)':
+            elif on_target_score_name == 'DeepGuide (Cas12a)':
                 if pam == 'TTTV' and orient == '5prime':
                     on_target_seq = []
                     for i in range(len(grna_hr_df)):
@@ -1084,7 +1084,7 @@ def main():
                 else:
                     grna_hr_df['On-target Score'] = 'NA'
 					
-            elif on_target_score_name == 'sgRNA_ecoli(Cas9)':
+            elif on_target_score_name == 'sgRNA_ecoli (Cas9)':
                 if pam == 'NGG' and orient == '3prime':
                     on_target_seq = []
                     for i in range(len(grna_hr_df)):
@@ -1096,7 +1096,7 @@ def main():
                     #sgRNA ecoli scoring
                     grna_hr_df['On-target Score'] = score_guides_bacteria(on_target_score_name, ambg_nt_replacement(on_target_seq, ambiguous_nucleotides))
                     
-            elif on_target_score_name == 'sgRNA_ecoli(eSpCas9)':
+            elif on_target_score_name == 'sgRNA_ecoli (eSpCas9)':
                 if pam == 'NGG' and orient == '3prime':
                     on_target_seq = []
                     for i in range(len(grna_hr_df)):
@@ -1254,6 +1254,6 @@ if __name__ == "__main__":
     parser.add_argument('--protein_file', type=str, default='', help="Fasta file containing protein sequences.")
     parser.add_argument('--blast_org', type=str, default='',  help="Name of the oprganism/s to blast proteins against to identify probable essential genes.")
     parser.add_argument('--distal_end_len', type=int, default=5000,  help="Remove guide RNA located within this distance from the end of the chromosome. Value is dependent on the organism of interest. Note for NGG PAM, enter a value greater than the length of the homology arms.")
-    parser.add_argument('--on_target', type=str, default='doench', help="Method to calculate on-target scores. Options: doench, crospr, deepguide(Cas9), deepguide(Cas12a), sgRNA_ecoli(Cas9), sgRNA_ecoli(eSpCas9).")
+    parser.add_argument('--on_target', type=str, default='Doench et al. 2016', help="Method to calculate on-target scores. Options: Doench et al. 2016, CROPSR, DeepGuide (Cas9), DeepGuide (Cas12a), sgRNA_ecoli (Cas9), sgRNA_ecoli (eSpCas9).")
     args = parser.parse_args()
     main()
