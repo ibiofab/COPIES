@@ -10,6 +10,7 @@ from bokeh.models import ColumnDataSource, HoverTool, BasicTickFormatter
 
 #Datas
 df = pd.read_csv(sys.argv[1], dtype={"Chromosome": "string"})
+df["Chromosome"] = df["Chromosome"].fillna("nan")
 
 #Processing
 chr_names = np.unique(list(df['Chromosome']))

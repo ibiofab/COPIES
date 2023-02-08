@@ -58,7 +58,11 @@ def event_handler(event):
     
     s3 = boto3.client('s3', region_name='us-east-2' )#, config=botocore.config.Config(s3={'addressing_style':'path'}))
     s3.upload_fileobj(memfile, "ibiofab-copies", event["entry_id"], ExtraArgs={"ContentDisposition": "attachment; filename=copies_Result.zip"})
-    s3.upload_file(os.path.join(working_directory,"copies_visualization.html"), "ibiofab-copies", event["entry_id"]+"_graph" , ExtraArgs={"ContentType" : "text/html", "ContentDisposition": "inline"})
+    try:
+        s3.upload_file(os.path.join(working_directory,"copies_visualization.html"), "ibiofab-copies", event["entry_id"]+"_graph" , ExtraArgs={"ContentType" : "text/html", "ContentDisposition": "inline"})
+    except FileNotFoundError:
+        # generation script did not run correctly.
+        pass
 
     dynamo_table.update_item(Key={"id":str(event["entry_id"])},
     UpdateExpression="SET percent_complete = :q",
