@@ -887,7 +887,7 @@ iupac_code = {
   "D": "A|G|T",
   "B": "C|G|T",
   "N": "A|C|G|T",
-}
+}þ
 
 def main():
     genome_file = args.Genome
@@ -948,6 +948,12 @@ def main():
     refined_gene_table = gene_table[gene_table['# feature']=='gene'][['Accession', 'Start', 'Stop', 'Strand', 'Locus tag']].reset_index(drop=True)
     pam_library = pam_to_search(pam,iupac_code)
     ambiguous_nucleotides = list(iupac_code.keys())[4:]
+    if " " in re_grna_list:
+        re_grna_list = re_grna_list.replace(" ", "")
+    if " " in re_hr_list:
+        re_hr_list = re_hr_list.replace(" ", "")
+    if " " in backbone_region:
+        backbone_region = backbone_region.replace(" ", "")
 
     if seedlen >= glen:
         print('Seed length should be less than the guide length.')
