@@ -10,7 +10,6 @@ from bokeh.models import ColumnDataSource, HoverTool, BasicTickFormatter
 
 #Datas
 df = pd.read_csv(sys.argv[1], dtype={"Chromosome": "string"})
-df["Chromosome"] = df["Chromosome"].fillna("NO NAME")
 
 #Processing
 chr_names = np.unique(list(df['Chromosome']))
@@ -18,7 +17,7 @@ acc_ids = np.unique(list(df['Accession']))
 
 #If chromosome names are available correctly, use those instead of accession IDs.
 len_list = []
-if len(chr_names) == len(acc_ids):
+if len(chr_names) == len(acc_ids) and not 'nan in chr_names:
     for i in range(len(chr_names)):
         len_list.append(df.loc[df['Chromosome'] == chr_names[i], 'Chromosome Length'].iloc[0])
         
