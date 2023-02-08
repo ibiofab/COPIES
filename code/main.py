@@ -887,7 +887,7 @@ iupac_code = {
   "D": "A|G|T",
   "B": "C|G|T",
   "N": "A|C|G|T",
-}þ
+}
 
 def main():
     genome_file = args.Genome
