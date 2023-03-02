@@ -52,6 +52,16 @@ os.mkdir(temporary)
 scann_time = 0
 blast_time = 0
 
+
+def update_state(name):
+    if "AWS_ENTRY_ID" in os.environ:
+        if not hasattr(update_state, "dynamo_table"):
+            import boto3
+            update_state.dynamo_table = boto3.resource('dynamodb').Table('ibiofab-copies')
+        update_state.dynamo_table.update_item(Key={"id":str(os.environ["AWS_ENTRY_ID"])},
+                    UpdateExpression="SET task_state = :q",
+                    ExpressionAttributeValues={":q" : name} )
+
 #Functions
 def read_fasta(name):
     fasta_seqs = SeqIO.parse(open(name),'fasta')
@@ -970,7 +980,9 @@ def main():
             sys.exit()
 
     #Obtaining harbors
+    update_state("Searching gRNA")
     grna_list = grna_search(genome, pam_library, glen, orient)
+    update_state("Filtering gRNA")
     grna_data = grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, polyT_len, edit_dist, refined_gene_table, intergenic_space, gdenslen, ambiguous_nucleotides, gc_limits, dist_type)
     del grna_list
 
@@ -997,6 +1009,7 @@ def main():
         grna_hr_df.insert(loc=0, column='PAM', value=pam_seq)
         grna_hr_df.insert(loc=0, column='Guide Sequence', value=guide_seq)
         del grna_hr_df['Guide with PAM']
+        grna_hr_df.insert(loc=7, column='GC Content', value=[GC(w) for w in list(df['Guide Sequence'])])
 
         chrom_name_df = gene_table.drop_duplicates('Accession').reset_index(drop=True)[['#Name','Accession']]
         grna_hr_df = grna_hr_df[grna_hr_df['Accession'].isin(list(chrom_name_df['Accession']))].reset_index(drop=True) #removing gRNA if accession ID not in gene table as intergenic criteria cannot be checked
@@ -1134,6 +1147,7 @@ def main():
             ref_org = os.path.join(temporary, 'RefOrg.fasta') 
             write_fasta(ref_org, eg_df)
 
+            update_state("Blasting")
             blast_start = time.perf_counter()
             #Creating Blast Database
             blastdb_cmd = '{}makeblastdb -in {} -parse_seqids -dbtype prot -out {}'.format(blast_path, ref_org, db)
@@ -1143,6 +1157,7 @@ def main():
             cmd_blastp = NcbiblastpCommandline(cmd = blast_path + 'blastp', query = protein_file, out = blastout, outfmt = 6, db = db,  num_threads=NUM_THREADS)
             stdout, stderr = cmd_blastp()
             blast_stop = time.perf_counter()
+            update_state("Finalizing")
             global blast_time
             blast_time = blast_stop - blast_start
 
