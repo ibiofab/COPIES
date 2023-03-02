@@ -1009,8 +1009,7 @@ def main():
         grna_hr_df.insert(loc=0, column='PAM', value=pam_seq)
         grna_hr_df.insert(loc=0, column='Guide Sequence', value=guide_seq)
         del grna_hr_df['Guide with PAM']
-        grna_hr_df.insert(loc=7, column='GC Content', value=[GC(w) for w in list(grna_hr_df['Guide Sequence'])])
-
+        
         chrom_name_df = gene_table.drop_duplicates('Accession').reset_index(drop=True)[['#Name','Accession']]
         grna_hr_df = grna_hr_df[grna_hr_df['Accession'].isin(list(chrom_name_df['Accession']))].reset_index(drop=True) #removing gRNA if accession ID not in gene table as intergenic criteria cannot be checked
 
@@ -1036,6 +1035,8 @@ def main():
             self_comp.append(folding)
 
         grna_hr_df.insert(loc = 3, column='Self-Complementarity', value = self_comp)
+        grna_hr_df.insert(loc = 3, column='GC Content', value=[GC(w) for w in list(grna_hr_df['Guide Sequence'])])
+
 
         #Remove gRNA located at the end of the chromosomes
         ind_to_remove = []
