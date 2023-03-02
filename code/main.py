@@ -1037,6 +1037,8 @@ def main():
         grna_hr_df.insert(loc = 3, column='Self-Complementarity', value = self_comp)
         grna_hr_df.insert(loc = 3, column='GC Content', value=[GC(w) for w in list(grna_hr_df['Guide Sequence'])])
 
+        #Adding Sequence ID to track gRNA in visualization (as Bokeh does not allow copying)
+        grna_hr_df.insert(0, 'ID', range(1, 1 + len(grna_hr_df)))
 
         #Remove gRNA located at the end of the chromosomes
         ind_to_remove = []
