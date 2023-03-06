@@ -1,4 +1,4 @@
-# COPIES
+# CRISPR-COPIES
 **CO**mputational **P**ipeline for **I**dentification of CRISPR-facilitated int**E**gration **S**ites (`CRISPR-COPIES`) is a command line and web interface tool for rapid discovery of neutral integration sites. Designed to work for any organism with a genome in NCBI and for any CRISPR system, `CRISPR-COPIES` can identify neutral sites in a genome-wide manner. The identified sites can be used for synthetic biology toolkit characterization and construction of genetically stable strains for biochemical production and gene therapy.
 
 - [Installation](#installation)
