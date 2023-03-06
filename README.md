@@ -1,5 +1,5 @@
 # COPIES
-**CO**mputational **P**ipeline for **I**dentification of CRISPR-facilitated int**E**gration **S**ites (`CRISPR-COPIES`) is a command line and web interface tool for rapid discovery of genomic safe harbors. Designed to work for any organism with a genome in NCBI and for any CRISPR system, `CRISPR-COPIES` can identify neutral sites in a genome-wide manner. The identified sites can be used for synthetic biology toolkit characterization and construction of genetically stable strains for biochemical production.
+**CO**mputational **P**ipeline for **I**dentification of CRISPR-facilitated int**E**gration **S**ites (`CRISPR-COPIES`) is a command line and web interface tool for rapid discovery of neutral integration sites. Designed to work for any organism with a genome in NCBI and for any CRISPR system, `CRISPR-COPIES` can identify neutral sites in a genome-wide manner. The identified sites can be used for synthetic biology toolkit characterization and construction of genetically stable strains for biochemical production and gene therapy.
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -7,7 +7,7 @@
 
 ### READ THE PAPER!
 
-This repository accompanies the work ["CRISPR-COPIES, an in-silico platform for screening safe harbors for CRISPR-facilitated gene integration"](https://www.google.com).
+This repository accompanies the work ["CRISPR-COPIES, an in silico platform for discovery of neutral integration sites for CRISPR-facilitated gene integration."](https://www.google.com).
 
 <details>
 <summary>If you use this tool, please cite us:</summary>
@@ -24,7 +24,7 @@ pip install -r requirements38.txt
 ### Usage
 
 #### Command Line
-`COPIES` can be accessed from the command line. For information on optional arguments and flags, run
+`CRISPR-COPIES` can be accessed from the command line. For information on optional arguments and flags, run
 ```
 python sites.py -h
 ```
