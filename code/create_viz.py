@@ -71,7 +71,7 @@ for i in range(len(y)):
 source = ColumnDataSource(guide_spec)
 
 loc_line = p.multi_line(xs='X', ys='Y', line_color='red', source=source)
-loc_hover = HoverTool(renderers=[loc_line], tooltips=[(("ID","@ID"),"Guide", "@Guide"),("Surrounding Genes", "@Genes")])
+loc_hover = HoverTool(renderers=[loc_line], tooltips=[("ID","@ID"),("Guide", "@Guide"),("Surrounding Genes", "@Genes")])
 p.add_tools(loc_hover)
         
 p.grid.visible = False
