@@ -65,7 +65,7 @@ for i in range(len(y)):
         guide_spec["X"].append([c_x,c_x])
         guide_spec["Y"].append([c_ymin,c_ymax])
         guide_spec['ID'].append(c_guide_ids)
-	    guide_spec['Guide'].append(c_guide)
+        guide_spec['Guide'].append(c_guide)
         guide_spec['Genes'].append(c_left_gene + ',' + c_right_gene)
         
 source = ColumnDataSource(guide_spec)
