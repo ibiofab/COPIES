@@ -45,7 +45,8 @@ p.hbar(y_pos, right = len_list, height = 0.6, alpha = 0.2)
 
 guide_spec = defaultdict(list)
 for i in range(len(y)):
-    curr_df = df.loc[df[label_to_use] == y[i]][['Guide Sequence','Location','Left Gene','Right Gene']].reset_index(drop=True)
+    curr_df = df.loc[df[label_to_use] == y[i]][['ID','Guide Sequence','Location','Left Gene','Right Gene']].reset_index(drop=True)
+    guide_ids = list(curr_df['ID'])
     site_loc = list(curr_df['Location'])
     guide_seq = list(curr_df['Guide Sequence'])
     left_gene = list(curr_df['Left Gene'])
@@ -53,6 +54,7 @@ for i in range(len(y)):
     for j in range(len(site_loc)):
         c_y = y_pos[i]
         c_x = site_loc[j]
+        c_guide_ids = guide_ids[j]
         c_guide = guide_seq[j]
         c_left_gene = left_gene[j]
         c_right_gene = right_gene[j]
@@ -62,13 +64,14 @@ for i in range(len(y)):
         
         guide_spec["X"].append([c_x,c_x])
         guide_spec["Y"].append([c_ymin,c_ymax])
-	guide_spec['Guide'].append(c_guide)
+        guide_spec['ID'].append(c_guide_ids)
+	    guide_spec['Guide'].append(c_guide)
         guide_spec['Genes'].append(c_left_gene + ',' + c_right_gene)
         
 source = ColumnDataSource(guide_spec)
 
 loc_line = p.multi_line(xs='X', ys='Y', line_color='red', source=source)
-loc_hover = HoverTool(renderers=[loc_line], tooltips=[("Guide", "@Guide"),("Surrounding Genes", "@Genes")])
+loc_hover = HoverTool(renderers=[loc_line], tooltips=[(("ID","@ID"),"Guide", "@Guide"),("Surrounding Genes", "@Genes")])
 p.add_tools(loc_hover)
         
 p.grid.visible = False
