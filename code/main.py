@@ -328,6 +328,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     scann_time = stop_scann - start_scann
     
     unique_grna_library_mm = []
+    nearest_neighbor = []
     k_to_check = 3 #knearest neighbor search
     if dist_type == 'hamming':
         for i in range(len_xq):
@@ -337,6 +338,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
 
             if all(i > edit_dist - 1 for i in knn_dist):
                 unique_grna_library_mm.append(grna_wo_pam_us_f[i])
+                nearest_neighbor.append(str(knn_dist[0]) + ‘,’ + complete_grna_library_wo_pam[neighbors[i][1]]) 
     else:
         for i in range(len_xq):
             knn_dist = []
@@ -345,6 +347,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
 
             if all(i > edit_dist - 1 for i in knn_dist):
                 unique_grna_library_mm.append(grna_wo_pam_us_f[i])
+                nearest_neighbor.append(str(knn_dist[0]) + ‘,’ + complete_grna_library_wo_pam[neighbors[i][1]])
                 
     if orient == '3prime':
         grna_to_compare = [item[0][:glen] for item in grna_list]    
@@ -354,6 +357,9 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     grna_to_compare_dict = dict(zip(grna_to_compare,range(0,len(grna_to_compare))))
     grna_index = [grna_to_compare_dict.get(key) for key in unique_grna_library_mm]
     grna_list_mm = [grna_list[i] for i in grna_index]
+
+    for i in range(len(grna_list_mm)):
+	    grna_list_mm[i] = grna_list_mm[i] + nearest_neighbor[i]
     
     del grna_to_compare, grna_to_compare_dict
     
@@ -991,7 +997,7 @@ def main():
         del grna_data
 
         #Cleaning and Labeling dataframe
-        grna_hr_df = pd.DataFrame(grna_hr_data, columns = ['Guide with PAM', 'Accession', 'Location', 'Strand', 'Chromosome Length', 'Intergenic Size', 'Left Gene', 'Right Gene', 'Relative Orientation', 'Gene Density', 'Left HR', 'Right HR'])
+        grna_hr_df = pd.DataFrame(grna_hr_data, columns = ['Guide with PAM', 'Accession', 'Location', 'Strand', 'Chromosome Length', 'Distance, Closest off-target', 'Intergenic Size', 'Left Gene', 'Right Gene', 'Relative Orientation', 'Gene Density', 'Left HR', 'Right HR'])
     else:
         print('No harbors can be obtained after applying the specified constraints. Try relaxing the edit distance criteria.')
         sys.exit()
