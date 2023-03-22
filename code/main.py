@@ -338,7 +338,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
 
             if all(i > edit_dist - 1 for i in knn_dist):
                 unique_grna_library_mm.append(grna_wo_pam_us_f[i])
-                nearest_neighbor.append(str(knn_dist[0]) + ‘,’ + complete_grna_library_wo_pam[neighbors[i][1]]) 
+                nearest_neighbor.append(str(knn_dist[0]) + ',' + complete_grna_library_wo_pam[neighbors[i][1]]) 
     else:
         for i in range(len_xq):
             knn_dist = []
@@ -347,7 +347,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
 
             if all(i > edit_dist - 1 for i in knn_dist):
                 unique_grna_library_mm.append(grna_wo_pam_us_f[i])
-                nearest_neighbor.append(str(knn_dist[0]) + ‘,’ + complete_grna_library_wo_pam[neighbors[i][1]])
+                nearest_neighbor.append(str(knn_dist[0]) + ',' + complete_grna_library_wo_pam[neighbors[i][1]])
                 
     if orient == '3prime':
         grna_to_compare = [item[0][:glen] for item in grna_list]    
