@@ -359,7 +359,7 @@ def grna_filter(grna_list, glen, pam, orient, seedlen, re_grna_list, polyG_len, 
     grna_list_mm = [grna_list[i] for i in grna_index]
 
     for i in range(len(grna_list_mm)):
-	    grna_list_mm[i] = grna_list_mm[i] + nearest_neighbor[i]
+	    grna_list_mm[i] = grna_list_mm[i] + [nearest_neighbor[i]]
     
     del grna_to_compare, grna_to_compare_dict
     
