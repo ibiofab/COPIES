@@ -36,7 +36,7 @@ python code/main.py -g s288c/GCF_000146045.2_R64_genomic.fna -t s288c/GCF_000146
 #### Web Interface
 You can also use `CRISPR-COPIES` through our web interface. Visit us at [CRISPR-COPIES](https://biofoundry.web.illinois.edu/copies/). 
 
-Note: We have restricted the web interface to prokaryotic and small eukaryotic genomes. We advise you to use our command line option for genomes greater than __ in size as significant time and computation resources are required. 
+Note: We have restricted the web interface to prokaryotic and small eukaryotic genomes. We advise you to use our command line option for genomes greater than 120 Mb in size as significant time and computation resources are required. 
 
 ### Parameters
 #### The parameter dictionary for `CRISPR-COPIES` is divided into 4 sections: 
