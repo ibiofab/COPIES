@@ -931,8 +931,35 @@ def main():
     distal_end = args.distal_end_len
     on_target_score_name = args.on_target
 
+    is_hex = False
+    try:
+        if int(args.lookup, 16) > 0:
+            is_hex = True
+    except ValueError:
+        pass 
+
     if args.lookup == None:
         print("Lookup not specified. Genome, Gene Table, and protein file must be specified manually.")
+    elif len(args.lookup) == 30 and is_hex:
+        # custom organism import from S3
+        import boto3
+        s3 = boto3.client('s3')
+        
+        data_object = s3.get_object(Bucket = "ibiofab-copies", Key = args.lookup+"_custom_genome")
+        genome_file = "/tmp/data_genomic.fna"
+        with open(genome_file, "wb") as f:
+            f.write(data_object['Body'].read())
+ 
+        data_object = s3.get_object(Bucket = "ibiofab-copies", Key = args.lookup+"_custom_protein")
+        protein_file = "/tmp/data_protein.faa"
+        with open(protein_file, "wb") as f:
+            f.write(data_object['Body'].read())
+
+        data_object = s3.get_object(Bucket = "ibiofab-copies", Key = args.lookup+"_custom_feature_table")
+        gene_file = "/tmp/data_feature_table.txt"
+        with open(gene_file, "wb") as f:
+            f.write(data_object['Body'].read())       
+
     else:
         index = {}
         with open(os.environ['SEARCH_IDX'], "r") as f:
