@@ -77,6 +77,8 @@ p.add_tools(loc_hover)
 p.grid.visible = False
 p.xaxis.axis_label = 'Length'
 p.yaxis.axis_label = 'ID'
+p.xaxis.axis_label_text_font_style = 'normal'
+p.yaxis.axis_label_text_font_style = 'normal'
 p.title.align = 'center'
 p.toolbar.logo = None
 p.xaxis.formatter = BasicTickFormatter(use_scientific=False)
