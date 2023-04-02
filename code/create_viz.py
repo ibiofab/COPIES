@@ -38,7 +38,7 @@ y_pos = np.arange(len(y)) + 0.5
 y_dict = {y_pos[i]: y[i] for i in range(len(y_pos))}
 
 
-p = figure(title = "Genomic Safe Harbors", sizing_mode="stretch_both", y_range = y)
+p = figure(title = "Neutral Integration Sites", sizing_mode="stretch_both", y_range = y)
   
 #plotting the graph
 p.hbar(y_pos, right = len_list, height = 0.6, alpha = 0.2)
