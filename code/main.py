@@ -1183,7 +1183,7 @@ def main():
             ref_org = os.path.join(temporary, 'RefOrg.fasta') 
             write_fasta(ref_org, eg_df)
 
-            update_state("Blasting")
+            update_state("BLASTing")
             blast_start = time.perf_counter()
             #Creating Blast Database
             blastdb_cmd = '{}makeblastdb -in {} -parse_seqids -dbtype prot -out {}'.format(blast_path, ref_org, db)
