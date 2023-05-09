@@ -3,7 +3,7 @@
 
 ![Summary](figs/GA.png)
 
-#### Web Interface
+### Web Interface
 You can also use `CRISPR-COPIES` through our web interface. Visit us at [CRISPR-COPIES](https://biofoundry.web.illinois.edu/copies/). 
 
 Note: We have restricted the web interface to prokaryotic and small eukaryotic genomes. We advise you to use our command line option for genomes greater than 120 Mb in size as significant time and computation resources are required. 
