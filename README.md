@@ -23,8 +23,7 @@ pip install -r requirements38.txt
 ```
 ### Usage
 
-#### Command Line
-`CRISPR-COPIES` can be accessed from the command line. For information on optional arguments and flags, run
+`CRISPR-COPIES` can be accessed from the command line. For information on parameters, run
 ```
 python main.py -h
 ```
