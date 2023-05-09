@@ -3,7 +3,7 @@
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Parameters](#parameters)
+- [Documentation](#documentation)
 
 ### READ THE PAPER!
 
