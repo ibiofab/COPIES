@@ -38,16 +38,4 @@ You can also use `CRISPR-COPIES` through our web interface. Visit us at [CRISPR-
 
 Note: We have restricted the web interface to prokaryotic and small eukaryotic genomes. We advise you to use our command line option for genomes greater than 120 Mb in size as significant time and computation resources are required. 
 
-### Parameters
-#### The parameter dictionary for `CRISPR-COPIES` is divided into 4 sections: 
-#### 1. Guide RNA
-<img src=https://user-images.githubusercontent.com/60017121/175441737-28ad07ab-8888-49ec-bec3-a77c4f153292.png width="648">
-
-#### 2. Homology Arm
-<img src=https://user-images.githubusercontent.com/60017121/172052679-150a321b-be90-4d4e-939c-5233a0775ea3.png width="648">
-
-#### 3. Harbor Information 
-<img src=https://user-images.githubusercontent.com/60017121/172052744-d0394ec2-b84e-498b-a583-ca04c919b530.png width="648">
-
-#### 4. Essentiality Information. 
-<img src=https://user-images.githubusercontent.com/60017121/172052754-3719f39a-021e-42ec-b828-ec22ed6ee6a6.png width="648">
+### Documentation
