@@ -33,7 +33,7 @@ python code/main.py -g s288c/GCF_000146045.2_R64_genomic.fna -t s288c/GCF_000146
 ```
 
 ### Documentation
-Detailed information and sample values of parameters for different organisms is provided [here](https://biofoundry.web.illinois.edu/copies/docs)
+Detailed information and sample values of parameters for different organisms is provided [here](https://biofoundry.web.illinois.edu/copies/docs).
 
 <details>
 <summary>If you use this tool, please cite us:</summary>
