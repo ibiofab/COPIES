@@ -3,18 +3,19 @@
 
 ![Summary](figs/GA.png)
 
-### Web Interface
+### READ THE PAPER!
+This repository accompanies the work ["CRISPR-COPIES: An in silico platform for discovery of neutral integration sites for CRISPR/Cas-facilitated gene integration"](https://www.google.com).
+
+### Web Application
 You can also use `CRISPR-COPIES` through our web interface. Visit us at [CRISPR-COPIES](https://biofoundry.web.illinois.edu/copies/). 
 
 Note: We have restricted the web interface to prokaryotic and small eukaryotic genomes. We advise you to use our command line option for genomes greater than 120 Mb in size as significant time and computation resources are required. 
 
+### Command Line Tool
+
 - [Installation](#installation)
 - [Usage](#usage)
 - [Documentation](#documentation)
-
-### READ THE PAPER!
-
-This repository accompanies the work ["CRISPR-COPIES: An in silico platform for discovery of neutral integration sites for CRISPR/Cas-facilitated gene integration"](https://www.google.com).
 
 <details>
 <summary>If you use this tool, please cite us:</summary>
