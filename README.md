@@ -1,5 +1,5 @@
 # CRISPR-COPIES
-**CO**mputational **P**ipeline for **I**dentification of CRISPR-facilitated int**E**gration **S**ites (`CRISPR-COPIES`) is a command line and web interface tool for rapid discovery of neutral integration sites. Designed to work for any organism with a genome in NCBI and for any CRISPR system, `CRISPR-COPIES` can identify neutral sites in a genome-wide manner. The identified sites can be used for synthetic biology toolkit characterization and construction of genetically stable strains for biochemical production and gene therapy.
+**CO**mputational **P**ipeline for **I**dentification of CRISPR-facilitated int**E**gration **S**ites (`CRISPR-COPIES`) is a command line and web interface tool for rapid discovery of neutral integration sites. Designed to work for any organism with a genome in NCBI and for any CRISPR system, `CRISPR-COPIES` can identify neutral sites in a genome-wide manner. The identified sites can be used for characterization of synthetic biology toolkits, rapid strain construction to produce valuable biochemicals, and human gene and cell therapy.
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -26,7 +26,7 @@ pip install -r requirements38.txt
 #### Command Line
 `CRISPR-COPIES` can be accessed from the command line. For information on optional arguments and flags, run
 ```
-python sites.py -h
+python main.py -h
 ```
 The parameters are explained in more details in the 'Parameter Dictionary' below. A sample example to run the script - 
 ```
