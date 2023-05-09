@@ -3,7 +3,7 @@
 
 ![Summary](figs/GA.png)
 
-### READ THE PAPER!
+### THE PAPER!
 This repository accompanies the work ["CRISPR-COPIES: An in silico platform for discovery of neutral integration sites for CRISPR/Cas-facilitated gene integration"](https://www.google.com).
 
 ### Web Application
