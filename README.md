@@ -28,7 +28,7 @@ pip install -r requirements38.txt
 ```
 python main.py -h
 ```
-The parameters are explained in more details in the 'Parameter Dictionary' below. A sample example to run the script - 
+A sample example to run the script - 
 ```
 python code/main.py -g s288c/GCF_000146045.2_R64_genomic.fna -t s288c/GCF_000146045.2_R64_feature_table.txt -p NGG -o 3prime -l 20 -sl 10 --edit_dist 6 --intspace 350 -out s288c/output.csv --distal_end_len 10000 -hr_l 50 --protein_file s288c/GCF_000146045.2_R64_protein.faa
 ```
