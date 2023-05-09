@@ -7,7 +7,7 @@
 
 ### READ THE PAPER!
 
-This repository accompanies the work ["CRISPR-COPIES, an in silico platform for discovery of neutral integration sites for CRISPR-facilitated gene integration."](https://www.google.com).
+This repository accompanies the work ["CRISPR-COPIES: An in silico platform for discovery of neutral integration sites for CRISPR/Cas-facilitated gene integration"](https://www.google.com).
 
 <details>
 <summary>If you use this tool, please cite us:</summary>
