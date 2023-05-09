@@ -3,6 +3,11 @@
 
 ![Summary](figs/GA.png)
 
+#### Web Interface
+You can also use `CRISPR-COPIES` through our web interface. Visit us at [CRISPR-COPIES](https://biofoundry.web.illinois.edu/copies/). 
+
+Note: We have restricted the web interface to prokaryotic and small eukaryotic genomes. We advise you to use our command line option for genomes greater than 120 Mb in size as significant time and computation resources are required. 
+
 - [Installation](#installation)
 - [Usage](#usage)
 - [Documentation](#documentation)
@@ -34,10 +39,5 @@ A sample example to run the script -
 ```
 python code/main.py -g s288c/GCF_000146045.2_R64_genomic.fna -t s288c/GCF_000146045.2_R64_feature_table.txt -p NGG -o 3prime -l 20 -sl 10 --edit_dist 6 --intspace 350 -out s288c/output.csv --distal_end_len 10000 -hr_l 50 --protein_file s288c/GCF_000146045.2_R64_protein.faa
 ```
-
-#### Web Interface
-You can also use `CRISPR-COPIES` through our web interface. Visit us at [CRISPR-COPIES](https://biofoundry.web.illinois.edu/copies/). 
-
-Note: We have restricted the web interface to prokaryotic and small eukaryotic genomes. We advise you to use our command line option for genomes greater than 120 Mb in size as significant time and computation resources are required. 
 
 ### Documentation
