@@ -17,14 +17,6 @@ Note: We have restricted the web interface to prokaryotic and small eukaryotic g
 - [Usage](#usage)
 - [Documentation](#documentation)
 
-<details>
-<summary>If you use this tool, please cite us:</summary>
-
-```bibtex
-
-```
-</details>
-
 ### Installation
 ```
 pip install -r requirements38.txt
@@ -42,3 +34,12 @@ python code/main.py -g s288c/GCF_000146045.2_R64_genomic.fna -t s288c/GCF_000146
 ```
 
 ### Documentation
+
+
+<details>
+<summary>If you use this tool, please cite us:</summary>
+
+```bibtex
+
+```
+</details>
