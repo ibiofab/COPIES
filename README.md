@@ -19,6 +19,8 @@ Note: We have restricted the web interface to prokaryotic and small eukaryotic g
 
 ### Installation
 ```
+conda create --name crispr_copies python=3.8
+conda activate crispr_copies
 pip install -r requirements38.txt
 ```
 ### Usage
