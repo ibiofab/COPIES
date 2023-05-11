@@ -1288,8 +1288,8 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-look', '--lookup', help="Pick genome, gene_table, and protein file from database with a fuzzy text search.", required=False)
-    parser.add_argument('-g', '--Genome', help="Genome filename", required=False)
-    parser.add_argument('-t', '--Gene_table', help="Gene table filename", required=False)
+    parser.add_argument('-g', '--Genome', help="Genome filename", required=True)
+    parser.add_argument('-t', '--Gene_table', help="Gene table filename", required=True)
     parser.add_argument('-out', '--Output_file', default = 'output.csv', help="Name of the output file")
     parser.add_argument('-p', '--PAM', type=str, default='NGG', help="A short PAM motif to search for, it may use IUPAC ambiguous alphabet. Default: NGG.", required=True)
     parser.add_argument('-o', '--Orientation', choices=['3prime', '5prime'], default='3prime', help="PAM position relative to target: 5prime: [PAM][target], 3prime: [target][PAM]. For example, PAM orientation for SpCas9 is 3prime. Default: 3prime.")
@@ -1311,6 +1311,6 @@ if __name__ == "__main__":
     parser.add_argument('--protein_file', type=str, default='', help="Fasta file containing protein sequences.")
     parser.add_argument('--blast_org', type=str, default='',  help="Name of the oprganism/s to blast proteins against to identify probable essential genes.")
     parser.add_argument('--distal_end_len', type=int, default=5000,  help="Remove guide RNA located within this distance from the end of the chromosome. Value is dependent on the organism of interest. Note for NGG PAM, enter a value greater than the length of the homology arms.")
-    parser.add_argument('--on_target', type=str, default='Doench et al. 2016', help="Method to calculate on-target scores. Options: Doench et al. 2016, CROPSR, DeepGuide (Cas9), DeepGuide (Cas12a), sgRNA_ecoli (Cas9), sgRNA_ecoli (eSpCas9).")
+    parser.add_argument('--on_target', type=str, default='Doench et al. 2016', help="Model to calculate on-target scores. Options: Doench et al. 2016, CROPSR, DeepGuide (Cas9), DeepGuide (Cas12a), sgRNA_ecoli (Cas9), sgRNA_ecoli (eSpCas9).")
     args = parser.parse_args()
     main()
