@@ -19,8 +19,8 @@ Note: We have restricted the web interface to prokaryotic and small eukaryotic g
 
 ### Installation
 ```
-conda create --name crispr_copies python=3.8
-conda activate crispr_copies
+bash setup.sh
+source venv38/bin/activate
 pip install -r requirements38.txt
 ```
 ### Usage
@@ -31,7 +31,7 @@ python code/main.py -h
 ```
 A sample example to run the script - 
 ```
-python code/main.py -g data/s288c/GCF_000146045.2_R64_genomic.fna -t data/s288c/GCF_000146045.2_R64_feature_table.txt -p NGG -o 3prime -l 20 -sl 10 --edit_dist 6 --intspace 350 -out data/s288c/output.csv --distal_end_len 10000 -hr_l 50 --protein_file data/s288c/GCF_000146045.2_R64_protein.faa
+python code/main.py -g ../data/s288c/GCF_000146045.2_R64_genomic.fna -t ../data/s288c/GCF_000146045.2_R64_feature_table.txt -p NGG -o 3prime -l 20 -sl 10 --edit_dist 6 --intspace 350 -out ../data/s288c/output.csv --distal_end_len 10000 -hr_l 50 --protein_file ../data/s288c/GCF_000146045.2_R64_protein.faa
 ```
 
 Note: -look or --lookup arguement is implemented to perform a fuzzy text search for the web application. One needs to specify the genome file, protein fasta file, and the corresponding feature table to run the command line tool.
